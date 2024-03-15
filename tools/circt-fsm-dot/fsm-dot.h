@@ -61,50 +61,20 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
-#include <z3++.h>
 
 using namespace llvm;
 using namespace mlir;
 using namespace circt;
 using namespace std;
-using namespace z3; 
 
-using z3Fun = std::function <expr (vector<expr>)>;
-
-using z3FunA = std::function <vector<expr> (vector<expr>)>;
 
 struct transition{
   string from;
   string to;
-  z3Fun guard;
+  vector<string> guard;
   bool isGuard;
-  z3FunA action;
+  vector<string> action;
   bool isAction;
-  z3Fun output;
+  string output;
   bool isOutput;
 };
-
-struct MyExprMap{
-  vector<expr> exprs;
-  vector<mlir::Value> values;
-};
-
-struct MyStateInvMap{
-  vector<mlir::StringRef> stateName;
-  vector<int> stateID;
-};
-
-struct MyStateInvMapFun{
-  vector<mlir::StringRef> stateName;
-  vector<func_decl> invFun;
-};
-
-struct MyStateInvMapOut{
-  vector<mlir::StringRef> stateName;
-  z3Fun output;
-};
-
-
-
-
-void printSolverAssertions(z3::solver& solver);
