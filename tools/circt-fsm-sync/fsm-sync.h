@@ -71,9 +71,10 @@ using namespace std;
 struct transition{
   string from;
   string to;
-  Region *guard;
+  vector<Region *> guard;
+  vector<int> neg;
   bool isGuard;
-  Region *action;
+  vector<Region *> action;
   bool isAction;
   string output;
   bool isOutput;
