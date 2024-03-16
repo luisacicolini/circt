@@ -1,4 +1,4 @@
-#include "fsm-dot.h"
+#include "fsm-sync.h"
 #include "circt/Dialect/FSM/FSMGraph.h"
 #include "mlir/IR/Value.h"
 #include "mlir/Support/LLVM.h"
@@ -21,10 +21,8 @@ using namespace circt;
 using namespace std;
 
 
-void parseFSM(string input_file, string output_file){
+void parseFSM(string input_file){
 
-  ofstream output;
-  // output.open(output_file);
 
   DialectRegistry registry;
   // clang-format off
@@ -43,9 +41,6 @@ void parseFSM(string input_file, string output_file){
 
   vector<transition> transitions;
 
-  output<<"digraph A{\n";
-
-  
   for (Region &rg: mod.getRegions()){
     for (Block &bl: rg){
       for (Operation &op: bl){
@@ -71,8 +66,6 @@ void parseFSM(string input_file, string output_file){
                         transition t;
                         t.from = currentState;
                         t.to = transop.getNextState();
-                        output<<t.from<<"->"<<t.to<<"\n";
-                        output<<"[label=\"";
                         t.isGuard = false;
                         t.isOutput = existsOutput;
                         t.isAction = false;
@@ -80,23 +73,15 @@ void parseFSM(string input_file, string output_file){
                         string nextState = transop.getNextState().str();                        
                         // guard
                         if(!trRegions[0]->empty()){
-                          Region &r = *trRegions[0];
-                          for(auto &op: r.getOps()){
-                            // output<<op.dump();
-
-                          }
+                          Region *r = trRegions[0];
+                          t.guard =  r;
                           t.isGuard = true;
                         }
                         // action 
                         if(!trRegions[1]->empty()){
-                          Region &r = *trRegions[1];
-                          for(auto &op: r.getOps()){
-                  //           ostream tmp;
-                  //           tmp << op;
-                  //           t.action.push_back(tmp.str());
-                          }
+                          Region *r = trRegions[1];
+                          t.action = r;
                           t.isAction = true;
-                          output<<"\"]";
                         }
                         transitions.push_back(t);
                       }
@@ -111,18 +96,18 @@ void parseFSM(string input_file, string output_file){
     }
   }
 
-  output<<"}";
-
-  output.close();
 }
 
 int main(int argc, char **argv){
 
-  string input = argv[1];
+  string input1 = argv[1];
 
-  string output = argv[2];
+  string input2 = argv[2];
 
-  parseFSM(input, output);
+  parseFSM(input1);
+
+  parseFSM(input2);
+
 
   return 0;
 

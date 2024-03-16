@@ -71,9 +71,9 @@ using namespace std;
 struct transition{
   string from;
   string to;
-  vector<string> guard;
+  Region *guard;
   bool isGuard;
-  vector<string> action;
+  Region *action;
   bool isAction;
   string output;
   bool isOutput;
