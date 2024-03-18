@@ -25,7 +25,7 @@ void printParallel(vector<transition> par){
 
   llvm::outs()<<"printing parallel FSM:\n";
   for(auto t: par){
-    llvm::outs()<<"from "<<t.from<<" to "<<t.to<<"\n";
+    llvm::outs()<<"\nfrom "<<t.from<<" to "<<t.to<<"\n";
     llvm::outs()<<"guard: ";
     for(auto g: t.guard){
     }
