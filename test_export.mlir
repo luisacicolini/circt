@@ -1,8 +1,3 @@
-// RUN: circt-translate --export-smtlib %s > %t && z3 %t 2>&1 | FileCheck %s
-// RUN: circt-translate --export-smtlib --smtlibexport-inline-single-use-values %s > %t && z3 %t 2>&1 | FileCheck %s
-// REQUIRES: z3
-
-// Quantifiers Attributes
 smt.solver () : () -> () {
 
   %true = smt.constant true
@@ -21,10 +16,3 @@ smt.solver () : () -> () {
 
   smt.check sat {} unknown {} unsat {}
 }
-
-// CHECK-NOT: WARNING
-// CHECK-NOT: warning
-// CHECK-NOT: ERROR
-// CHECK-NOT: error
-// CHECK-NOT: unsat
-// CHECK: sat

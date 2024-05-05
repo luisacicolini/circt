@@ -358,9 +358,11 @@ struct ExpressionVisitor
       info.stream << "\n :pattern (";
       for(auto &p: patterns){
 
-        // retrieve argument name from the body region
         for (auto [i, arg] : llvm::enumerate(p.getArguments())) {
+
+          // retrieve argument name from the body region
           info.valueMap.insert(arg, argNames[i].str());
+
         }
         SmallVector<Value> worklist;
 
@@ -370,7 +372,7 @@ struct ExpressionVisitor
 
         unsigned indentExt = operatorString.size() + 2;
 
-        VisitorInfo newInfo2(info.stream, info.valueMap,
+        VisitorInfo newInfo(info.stream, info.valueMap,
                             info.indentLevel + indentExt, info.openParens);
         
         info.stream.indent(0);
@@ -379,7 +381,7 @@ struct ExpressionVisitor
           return failure();
 
         info.stream << info.valueMap.lookup(yieldedValue);
-        for (unsigned j = 0; j < newInfo2.openParens; ++j)
+        for (unsigned j = 0; j < newInfo.openParens; ++j)
           info.stream << ")";
         info.stream << ")";
 
