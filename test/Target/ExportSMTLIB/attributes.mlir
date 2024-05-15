@@ -148,6 +148,20 @@ smt.solver () : () -> () {
   smt.assert %10
 
   smt.check sat {} unknown {} unsat {}
+
+  // CHECK: (assert (let (([[V21:.+]] (exists (([[V22:.+]] Int) ([[V23:.+]] Int))
+  // CHECK:                           ( ! (let (([[V24:.+]] (= [[V22]] [[V23]])))
+  // CHECK:                           (let (([[V25:.+]] (=> [[V24]] true)))
+  // CHECK:                           [[V25]]))
+  // CHECK:               [[V21]]))
+
+  %6 = smt.exists no_pattern {
+    ^bb0(%arg2: !smt.int, %arg3: !smt.int):
+    %4 = smt.eq %arg2, %arg3 : !smt.int
+    %5 = smt.implies %4, %true
+    smt.yield %5 : !smt.bool
+  } 
+  smt.assert %6
   
   // CHECK: (reset)
   // CHECK-INLINED: (reset)

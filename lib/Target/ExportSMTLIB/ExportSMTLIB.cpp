@@ -296,9 +296,6 @@ struct ExpressionVisitor
                                  VisitorInfo &info) {
     auto weight = op.getWeight();
     auto patterns = op.getPatterns();
-    // TODO: add support
-    if (op.getNoPattern())
-      return op.emitError() << "no-pattern attribute not supported yet";
 
     llvm::ScopedHashTableScope<Value, std::string> scope(info.valueMap);
     info.stream << "(" << operatorString << " (";
@@ -327,7 +324,7 @@ struct ExpressionVisitor
 
     info.stream << ")\n";
 
-    if (weight != 0 || !patterns.empty())
+    if (weight != 0 || !patterns.empty() || op.getNoPattern())
       info.stream << "( ! ";
 
     // Print the quantifier body. This assumes that quantifiers are not deeply
@@ -338,7 +335,7 @@ struct ExpressionVisitor
     unsigned indentExt = operatorString.size() + 2;
     VisitorInfo newInfo(info.stream, info.valueMap,
                         info.indentLevel + indentExt, 0);
-    if (weight != 0 || !patterns.empty())
+    if (weight != 0 || !patterns.empty() || op.getNoPattern())
       newInfo.stream.indent(0);
     else
       newInfo.stream.indent(info.indentLevel);
@@ -390,9 +387,12 @@ struct ExpressionVisitor
         first = false;
       }
       info.stream << ")";
+    } else if (op.getNoPattern()){
+      info.stream << " :no-pattern ";
+
     }
 
-    if (weight != 0 || !patterns.empty())
+    if (weight != 0 || !patterns.empty() || op.getNoPattern())
       info.stream << ")";
 
     info.stream << ")";
