@@ -296,8 +296,6 @@ struct ExpressionVisitor
     auto weight = op.getWeight();
     auto patterns = op.getPatterns();
     // TODO: add support
-    if (patterns.size() > 1)
-      return op.emitError() << "multiple patterns not supported yet";
     if (op.getNoPattern())
       return op.emitError() << "no-pattern attribute not supported yet";
 
@@ -355,7 +353,11 @@ struct ExpressionVisitor
       info.stream << " :weight " << weight;
     if (!patterns.empty()) {
       info.stream << "\n :pattern (";
+      bool first = 1;
       for (auto &p : patterns) {
+        
+        if(!first)
+          info.stream << " ";
 
         // retrieve argument name from the body region
         for (auto [i, arg] : llvm::enumerate(p.getArguments()))
