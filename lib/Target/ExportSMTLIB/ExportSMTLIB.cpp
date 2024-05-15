@@ -356,8 +356,8 @@ struct ExpressionVisitor
       info.stream << "\n:pattern (";
       bool first = true;
       for (auto &p : patterns) {
-        
-        if(!first)
+
+        if (!first)
           info.stream << " ";
 
         // retrieve argument name from the body region
@@ -366,15 +366,16 @@ struct ExpressionVisitor
 
         SmallVector<Value> worklist;
 
-        // retrieve all yielded operands in pattern region 
-        for (int opr = 0; opr<p.front().getTerminator()->getOperands().size(); ++opr){
+        // retrieve all yielded operands in pattern region
+        for (int opr = 0; opr < p.front().getTerminator()->getOperands().size();
+             ++opr) {
 
           Value yieldedValue = p.front().getTerminator()->getOperand(opr);
           worklist.push_back(yieldedValue);
           unsigned indentExt = operatorString.size() + 2;
 
           VisitorInfo newInfo2(info.stream, info.valueMap,
-                             info.indentLevel + indentExt, 0);
+                               info.indentLevel + indentExt, 0);
 
           info.stream.indent(0);
 
@@ -385,8 +386,6 @@ struct ExpressionVisitor
           for (unsigned j = 0; j < newInfo2.openParens; ++j)
             info.stream << ")";
         }
-        
-
 
         first = false;
       }
