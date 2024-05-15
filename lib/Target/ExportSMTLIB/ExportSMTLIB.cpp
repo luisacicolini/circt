@@ -22,6 +22,7 @@
 #include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace circt;
 using namespace smt;
@@ -352,7 +353,7 @@ struct ExpressionVisitor
     if (weight != 0)
       info.stream << " :weight " << weight;
     if (!patterns.empty()) {
-      info.stream << "\n :pattern (";
+      info.stream << "\n:pattern (";
       bool first = true;
       for (auto &p : patterns) {
         
@@ -365,23 +366,27 @@ struct ExpressionVisitor
 
         SmallVector<Value> worklist;
 
-        Value yieldedValue = p.front().getTerminator()->getOperand(0);
+        // retrieve all yielded operands in pattern region 
+        for (int opr = 0; opr<p.front().getTerminator()->getOperands().size(); ++opr){
 
-        worklist.push_back(yieldedValue);
+          Value yieldedValue = p.front().getTerminator()->getOperand(opr);
+          worklist.push_back(yieldedValue);
+          unsigned indentExt = operatorString.size() + 2;
 
-        unsigned indentExt = operatorString.size() + 2;
-
-        VisitorInfo newInfo2(info.stream, info.valueMap,
+          VisitorInfo newInfo2(info.stream, info.valueMap,
                              info.indentLevel + indentExt, 0);
 
-        info.stream.indent(0);
+          info.stream.indent(0);
 
-        if (failed(printExpression(worklist, newInfo2)))
-          return failure();
+          if (failed(printExpression(worklist, newInfo2)))
+            return failure();
 
-        info.stream << info.valueMap.lookup(yieldedValue);
-        for (unsigned j = 0; j < newInfo2.openParens; ++j)
-          info.stream << ")";
+          info.stream << info.valueMap.lookup(yieldedValue);
+          for (unsigned j = 0; j < newInfo2.openParens; ++j)
+            info.stream << ")";
+        }
+        
+
 
         first = false;
       }

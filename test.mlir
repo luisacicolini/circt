@@ -13,13 +13,10 @@ smt.solver () : () -> () {
   } patterns {
     ^bb0(%arg2: !smt.int, %arg3: !smt.int):
     %4 = smt.eq %arg2, %three: !smt.int
-    smt.yield %4: !smt.bool}, {
-    ^bb0(%arg2: !smt.int, %arg3: !smt.int):
     %5 = smt.eq %arg3, %four: !smt.int
-    smt.yield %5: !smt.bool
+    smt.yield %4, %5: !smt.bool, !smt.bool
   }
   smt.assert %8
-
 
   smt.check sat {} unknown {} unsat {}
 }

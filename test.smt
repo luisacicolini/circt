@@ -9,4 +9,3 @@
                            tmp_6))))))
         tmp))
 (check-sat)
-(reset)
