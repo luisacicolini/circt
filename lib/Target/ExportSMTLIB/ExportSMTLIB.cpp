@@ -353,7 +353,7 @@ struct ExpressionVisitor
       info.stream << " :weight " << weight;
     if (!patterns.empty()) {
       info.stream << "\n :pattern (";
-      bool first = 1;
+      bool first = true;
       for (auto &p : patterns) {
         
         if(!first)
@@ -382,6 +382,8 @@ struct ExpressionVisitor
         info.stream << info.valueMap.lookup(yieldedValue);
         for (unsigned j = 0; j < newInfo2.openParens; ++j)
           info.stream << ")";
+
+        first = false;
       }
       info.stream << ")";
     }
