@@ -8,7 +8,7 @@
 #include "fstream"
 #include "iostream"
 
-#define V 0
+#define V 1
 
 using namespace llvm;
 using namespace mlir;
@@ -103,7 +103,7 @@ vector<mlir::Value> actionsCounter(Region& action){
 */
 expr manage_comb_exp(Operation &op, vector<expr>& vec, z3::context &c){
   if(auto add = dyn_cast<comb::AddOp>(op)){
-    return to_expr(c, vec[0] + vec[1]);
+    return expr(vec[0] + vec[1]);
   } 
   else if(auto and_op = dyn_cast<comb::AndOp>(op)){
     return expr(vec[0] && vec[1]);
@@ -163,10 +163,7 @@ expr getExpr(mlir::Value v, vector<std::pair<expr, mlir::Value>> expr_map, z3::c
       return e.first;
   } 
   if(auto constop = dyn_cast<hw::ConstantOp>(v.getDefiningOp())){
-    if(constop.getType().getIntOrFloatBitWidth()>1)
-      return c.int_val(constop.getValue().getSExtValue());
-    else
-      return c.bool_val(0);
+    return c.bv_val(constop.getValue().getSExtValue(), constop.getType().getIntOrFloatBitWidth());
   }
   llvm::errs()<<"Expression not found.";
 }
@@ -233,7 +230,8 @@ vector<expr> getActionExpr(Region& action, context& c, vector<mlir::Value>* to_u
 /**
  * @brief Parse FSM arguments and add them to the variable map
 */
-int populateArgs(Operation &mod, vector<mlir::Value> *vecVal, vector<std::pair<expr, mlir::Value>> *variables, z3::context &c){
+vector<int> populateArgs(Operation &mod, vector<mlir::Value> *vecVal, vector<std::pair<expr, mlir::Value>> *variables, z3::context &c){
+  vector<int> sizes;
   int numArgs = 0;
   for(Region &rg: mod.getRegions()){
       for(Block &bl: rg){
@@ -242,17 +240,10 @@ int populateArgs(Operation &mod, vector<mlir::Value> *vecVal, vector<std::pair<e
             for (Region &rg : op.getRegions()) {
               for (Block &block : rg) {
                 for(auto a: block.getArguments()){
-                  expr input = c.bool_const(("arg"+to_string(numArgs)).c_str());
-                  if(a.getType().getIntOrFloatBitWidth()>1){ 
-                    input = c.int_const(("arg"+to_string(numArgs)).c_str());
-                  } else {
-                    input = c.bool_const(("arg"+to_string(numArgs)).c_str());
-                  }
+                  expr input = c.bv_const(("arg"+to_string(numArgs)).c_str(), a.getType().getIntOrFloatBitWidth());
                   variables->push_back({input, a});
-                  // varMap->exprs.push_back(input);
-                  // varMap->values.push_back(a);
-                  // vecVal->push_back(a);
                   numArgs++;
+                  sizes.push_back(a.getType().getIntOrFloatBitWidth());
                 }
               }
             }
@@ -260,13 +251,14 @@ int populateArgs(Operation &mod, vector<mlir::Value> *vecVal, vector<std::pair<e
         }
       }
     }
-    return numArgs;
+    return sizes;
 }
 
 /**
  * @brief Parse FSM variables and add them to the variable map
 */
-void populateVars(Operation &mod, vector<mlir::Value>* vecVal, vector<std::pair<expr, mlir::Value>> *variables, z3::context &c, int numArgs){
+vector<int> populateVars(Operation &mod, vector<mlir::Value>* vecVal, vector<std::pair<expr, mlir::Value>> *variables, z3::context &c, int numArgs){
+  vector<int> sizes;
   for(Region &rg: mod.getRegions()){
     for(Block &bl: rg){
       for(Operation &op: bl){
@@ -278,19 +270,14 @@ void populateVars(Operation &mod, vector<mlir::Value>* vecVal, vector<std::pair<
                   vecVal->push_back(varOp.getResult());
                   int initValue = varOp.getInitValue().cast<IntegerAttr>().getInt();
                   string varName = varOp.getName().str();
+                  // reserved keyword arg for arguments to avoid ambiguity when setting initial state values
                   if(varOp.getName().str().find("arg") != std::string::npos){
-                    // reserved keyword arg for arguments to avoid ambiguity when setting initial state values
                     varName = "var"+to_string(numArgs);
                     numArgs++;
                   }
-                  expr input = c.bool_const((varName+"_"+to_string(initValue)).c_str());
-                  if(varOp.getResult().getType().getIntOrFloatBitWidth()>1){ 
-                    input = c.int_const((varName+"_"+to_string(initValue)).c_str());
-                  }
+                  expr input = c.bv_const((varName+"_"+to_string(initValue)).c_str(), varOp.getResult().getType().getIntOrFloatBitWidth());
+                  sizes.push_back(varOp.getResult().getType().getIntOrFloatBitWidth());
                   variables->push_back({input, varOp.getResult()});
-                  // varMap->insert(input, varOp.getResult());
-                  // varMap->exprs.push_back(input);
-                  // varMap->values.push_back(varOp.getResult());
                 }
               }
             }
@@ -299,6 +286,7 @@ void populateVars(Operation &mod, vector<mlir::Value>* vecVal, vector<std::pair<
       }
     }
   }
+  return sizes;
 }
 
 /**
@@ -426,15 +414,8 @@ void populateInvInput(vector<std::pair<expr, mlir::Value>> *variables, context &
   int i=0;
 
   for(auto e: *variables){
-    expr input = c.bool_const(("arg"+to_string(i)).c_str());
-    z3::sort invIn = c.bool_sort();
-    if(e.second.getType().getIntOrFloatBitWidth()>1){ 
-
-      // llvm::outs()<<"adding expression "<<(e.first).to_string()<<" with value "<<(e.second)<<"\n";
-
-      input = c.int_const(("arg"+to_string(i)).c_str());
-      invIn = c.int_sort(); 
-    }
+    expr input = c.bv_const(("arg"+to_string(i)).c_str(), e.second.getType().getIntOrFloatBitWidth());
+    z3::sort invIn = c.bv_sort(e.second.getType().getIntOrFloatBitWidth()); 
     solverVars->push_back(input);
     if(V){
       llvm::outs()<<"solverVars now: "<<solverVars->at(i).to_string()<<"\n";
@@ -497,21 +478,11 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
     llvm::outs()<<"initial state: "<<initialState<<"\n";
   }
 
+  vector<int> argSizes = populateArgs(mod, vecVal, variables, c);
 
-
-
-
-  int numArgs = populateArgs(mod, vecVal, variables, c);
-
-
-
-  populateVars(mod, vecVal, variables, c, numArgs);
-
-
+  vector<int> varSizes = populateVars(mod, vecVal, variables, c, argSizes.size());
 
   populateST(mod, c, stateInv, transitions, vecVal);
-
-
 
   // preparing the model
 
@@ -525,19 +496,19 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
 
   populateInvInput(variables, c, solverVars, invInput);
 
-  expr time_var = c.int_const("time");
-  z3::sort timeInv = c.int_sort();
+  expr time_var = c.bv_const("time",32);
+  z3::sort timeInv = c.bv_sort(32);
   
   solverVars->push_back(time_var);
   invInput->push_back(timeInv);
 
   // generate functions for inputs
   if(V)
-    llvm::outs()<<"number of args: "<<numArgs<<"\n\n";
+    llvm::outs()<<"number of args: "<<argSizes.size()<<"\n\n";
 
 
 
-  for(int i=0; i<numArgs; i++){
+  for(int i=0; i<argSizes.size(); i++){
       const symbol cc = c.str_symbol(("input-arg"+to_string(i)).c_str());
       llvm::outs()<<"domain: "<<&invInput->at(i)<<"\n";
       Z3_func_decl I = Z3_mk_func_decl(c, cc, 1, &invInput->at(i), c.int_sort());
@@ -554,42 +525,38 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
     }
   }
 
-  int j=0;
-
-
 
   vector<expr> *solverVarsInit = new vector<expr>;
   copy(solverVars->begin(), solverVars->end(), back_inserter(*solverVarsInit));  
 
+  int j=0;
 
   for (auto var: *variables){
     if(var.first.to_string().find("arg") == std::string::npos && solverVars->size() > 1 && strcmp(var.first.to_string().c_str(), "time")){
       int init_value = stoi(var.first.to_string().substr(var.first.to_string().find("_")+1));
-      solverVarsInit->at(j) = c.int_val(init_value);
+      solverVarsInit->at(j) = c.bv_val(init_value, varSizes[j]);
     }
     j++;
   }
 
+  // how do I manage this and why did I even do this???? can I just initialize as variables?
+  // z3::sort bv_sort = c.bv_sort(32);
+  // z3::sort inputArraySort = c.array_sort(bv_sort, bv_sort);
+  // z3::expr array = z3::to_expr(c, Z3_mk_const(c, Z3_mk_string_symbol(c, "array"), inputArraySort));
 
-
-  z3::sort int_sort = c.int_sort();
-  z3::sort inputArraySort = c.array_sort(int_sort, int_sort);
-  z3::expr array = z3::to_expr(c, Z3_mk_const(c, Z3_mk_string_symbol(c, "array"), inputArraySort));
-
-
-
-  solverVarsInit->at(solverVarsInit->size()-1) = c.int_val(0);
-  for(long unsigned i=0; i<argInputs->size(); i++){
-    solverVarsInit->at(i) = array[c.int_val(0)];
-  }
+  // solverVarsInit->at(solverVarsInit->size()-1) = c.int_val(0);
+  // for(long unsigned i=0; i<argInputs->size(); i++){
+  //   solverVarsInit->at(i) = array[c.bv_val(0, argSizes[i])];
+  // }
 
 
   // initialize time to 0
+
+  printTransitions(transitions);
+
   expr body = stateInvFun->at(transitions->at(0).from)(solverVarsInit->size(), solverVarsInit->data());
   // initial condition
   s.add(nestedForall(*solverVars, body, 0));
-
-
 
   for(auto t: *transitions){
 
@@ -598,12 +565,9 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
     copy(solverVars->begin(), solverVars->end(), back_inserter(*solverVarsAfter));
     solverVarsAfter->at(solverVarsAfter->size()-1) = solverVars->at(solverVars->size()-1)+1;
 
-    for(int i=0; i<int(argInputs->size()); i++){
-      solverVarsAfter->at(i) = array[solverVars->at(solverVars->size()-1)+1];
-    }
-
-
-
+    // for(int i=0; i<int(argInputs->size()); i++){
+    //   solverVarsAfter->at(i) = array[solverVars->at(solverVars->size()-1)+1];
+    // }
 
     if(t.isGuard && t.isAction){
       expr body = implies(stateInvFun->at(t.from)(solverVars->size(), solverVars->data()) && t.guard(*solverVars), stateInvFun->at(t.to)(t.action(*solverVarsAfter).size(), t.action(*solverVarsAfter).data()));
@@ -620,12 +584,7 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
       s.add(forall(solverVars->at(solverVars->size()-1),  implies((solverVars->at(solverVars->size()-1)>=0 && solverVars->at(solverVars->size()-1)<time), ((nestedForall(*solverVars, body, 0))))));
     }
 
-
-
-
   }
-
-  // printTransitions(transitions);
 
   llvm::outs()<<"property to test: "<<property<<"\n";
 
