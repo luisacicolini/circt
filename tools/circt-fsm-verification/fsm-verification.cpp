@@ -544,10 +544,22 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
   // z3::sort inputArraySort = c.array_sort(bv_sort, bv_sort);
   // z3::expr array = z3::to_expr(c, Z3_mk_const(c, Z3_mk_string_symbol(c, "array"), inputArraySort));
 
-  // solverVarsInit->at(solverVarsInit->size()-1) = c.int_val(0);
-  // for(long unsigned i=0; i<argInputs->size(); i++){
-  //   solverVarsInit->at(i) = array[c.bv_val(0, argSizes[i])];
-  // }
+
+  vector<vector<expr>> *inputVecs = new vector<vector<expr>>;
+
+  for(int i=0; i<int(argSizes.size()); i++){
+    vector<expr> tmp;
+    for(int j=0; j<=time; j++){
+      expr e = c.bv_const(("arg"+to_string(i)).c_str(), argSizes[i]);
+      tmp.push_back(e);
+    }
+    inputVecs->push_back(tmp);
+  }
+
+  solverVarsInit->at(solverVarsInit->size()-1) = c.bv_val(0, 32);
+  for(int i=0; i<int(argInputs->size()); i++){
+    solverVarsInit->at(i) =  inputVecs->at(i)[0];
+  }
 
 
   // initialize time to 0
@@ -565,9 +577,13 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
     copy(solverVars->begin(), solverVars->end(), back_inserter(*solverVarsAfter));
     solverVarsAfter->at(solverVarsAfter->size()-1) = solverVars->at(solverVars->size()-1)+1;
 
-    // for(int i=0; i<int(argInputs->size()); i++){
-    //   solverVarsAfter->at(i) = array[solverVars->at(solverVars->size()-1)+1];
-    // }
+    for(int i=0; i<int(argInputs->size()); i++){
+      solverVarsAfter->at(i) = inputVecs->at(i)[time+1];
+    }
+
+    for(int i=0; i<int(argInputs->size()); i++){
+      solverVars->at(i) = inputVecs->at(i)[time];
+    }
 
     if(t.isGuard && t.isAction){
       expr body = implies(stateInvFun->at(t.from)(solverVars->size(), solverVars->data()) && t.guard(*solverVars), stateInvFun->at(t.to)(t.action(*solverVarsAfter).size(), t.action(*solverVarsAfter).data()));

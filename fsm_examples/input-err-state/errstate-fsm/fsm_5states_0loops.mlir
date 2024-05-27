@@ -14,6 +14,11 @@ fsm.machine @fsm5(%err: i16) -> () attributes {initialState = "_0"} {
 				%tmp = comb.add %x0, %c1 : i16
 				fsm.update %x0, %tmp : i16
 			}
+		fsm.transition @ERR
+			guard {
+				%tmp1 = comb.icmp eq %err, %c1 : i16
+				fsm.return %tmp1
+			}
 
 	}
 
