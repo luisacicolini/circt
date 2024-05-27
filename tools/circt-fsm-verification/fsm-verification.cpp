@@ -531,9 +531,9 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
 
   int j=0;
 
-  for (auto var: *variables){
-    if(var.first.to_string().find("arg") == std::string::npos && solverVars->size() > 1 && strcmp(var.first.to_string().c_str(), "time")){
-      int init_value = stoi(var.first.to_string().substr(var.first.to_string().find("_")+1));
+  for (int k = int(argSizes.size()); k< varSizes.size(); k++){
+    if(variables->at(k).first.to_string().find("arg") == std::string::npos && solverVars->size() > 1 && strcmp(variables->at(k).first.to_string().c_str(), "time")){
+      int init_value = stoi(variables->at(k).first.to_string().substr(variables->at(k).first.to_string().find("_")+1));
       solverVarsInit->at(j) = c.bv_val(init_value, varSizes[j]);
     }
     j++;
@@ -578,11 +578,11 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
     solverVarsAfter->at(solverVarsAfter->size()-1) = solverVars->at(solverVars->size()-1)+1;
 
     for(int i=0; i<int(argInputs->size()); i++){
-      solverVarsAfter->at(i) = inputVecs->at(i)[time+1];
+      solverVarsAfter->at(i) = inputVecs->at(i)[solverVars->at(solverVars->size()-1)];
     }
 
     for(int i=0; i<int(argInputs->size()); i++){
-      solverVars->at(i) = inputVecs->at(i)[time];
+      solverVars->at(i) = inputVecs->at(i)[solverVarsAfter->at(solverVarsAfter->size()-1)];
     }
 
     if(t.isGuard && t.isAction){
@@ -602,42 +602,42 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
 
   }
 
-  llvm::outs()<<"property to test: "<<property<<"\n";
+  // llvm::outs()<<"property to test: "<<property<<"\n";
 
-  switch (property) {
-    case 0: // reachability unsat
+  // switch (property) {
+  //   case 0: // reachability unsat
 
-      llvm::outs()<<"\nTesting reachability of state "<<arg1<<" indexed at \n";
-      llvm::outs()<<insertState(arg1, stateInv);
+  //     llvm::outs()<<"\nTesting reachability of state "<<arg1<<" indexed at \n";
+  //     llvm::outs()<<insertState(arg1, stateInv);
 
-      body = !stateInvFun->at(insertState(arg1, stateInv))(solverVars->size(), solverVars->data());
-      s.add(forall(solverVars->at(solverVars->size()-1),  implies((solverVars->at(solverVars->size()-1)>=0 && solverVars->at(solverVars->size()-1)<time), nestedForall(*solverVars,body,0))));
+  //     body = !stateInvFun->at(insertState(arg1, stateInv))(solverVars->size(), solverVars->data());
+  //     s.add(forall(solverVars->at(solverVars->size()-1),  implies((solverVars->at(solverVars->size()-1)>=0 && solverVars->at(solverVars->size()-1)<time), nestedForall(*solverVars,body,0))));
       
-      // slow alternative: reachability sat
-      // body = (findMyFun(to_check, stateInvFun)(solverVars->size(), solverVars->data()));
-      // s.add(exists(solverVars->at(solverVars->size()-1),  implies((solverVars->at(solverVars->size()-1)>=0 && solverVars->at(solverVars->size()-1)<time), nestedForall(*solverVars,body,0))));
-      break;
+  //     // slow alternative: reachability sat
+  //     // body = (findMyFun(to_check, stateInvFun)(solverVars->size(), solverVars->data()));
+  //     // s.add(exists(solverVars->at(solverVars->size()-1),  implies((solverVars->at(solverVars->size()-1)>=0 && solverVars->at(solverVars->size()-1)<time), nestedForall(*solverVars,body,0))));
+  //     break;
 
-    case 1: // comb unsat
-
-
-      int var = stoi(arg2);
-      int value = stoi(arg3);
-
-      llvm::outs()<<"\nTesting value "<<value<<" of variable "<<var<<" at state "<<arg1<<"\n";
+  //   case 1: // comb unsat
 
 
-      if (var>=int(solverVars->size())-1){
-        llvm::errs()<<"Tested variable does not exist\n";
-        return;
-      }
+  //     int var = stoi(arg2);
+  //     int value = stoi(arg3);
 
-      body = ((stateInvFun->at(insertState(arg1, stateInv))(solverVars->size(), solverVars->data())) && (solverVars->at(var)!=value));
-      s.add(exists(solverVars->at(solverVars->size()-1),  nestedForall(*solverVars, body, 0)));
-      break;
-  }
+  //     llvm::outs()<<"\nTesting value "<<value<<" of variable "<<var<<" at state "<<arg1<<"\n";
 
-  printSolverAssertions(s);
+
+  //     if (var>=int(solverVars->size())-1){
+  //       llvm::errs()<<"Tested variable does not exist\n";
+  //       return;
+  //     }
+
+  //     body = ((stateInvFun->at(insertState(arg1, stateInv))(solverVars->size(), solverVars->data())) && (solverVars->at(var)!=value));
+  //     s.add(exists(solverVars->at(solverVars->size()-1),  nestedForall(*solverVars, body, 0)));
+  //     break;
+  // }
+
+  // printSolverAssertions(s);
 
 }
 
