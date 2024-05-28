@@ -89,6 +89,8 @@ string getInitialState(Operation &mod){
  * @brief Returns list of values to be updated within an action region
 */
 vector<mlir::Value> actionsCounter(Region& action){
+  llvm::outs()<<"\nactionscounter\n";
+
   vector<mlir::Value> to_update;
   for(auto &op: action.getOps()){
     if (auto updateop = dyn_cast<fsm::UpdateOp>(op)){
@@ -102,6 +104,8 @@ vector<mlir::Value> actionsCounter(Region& action){
  * @brief Returns expression from Comb dialect operator
 */
 expr manage_comb_exp(Operation &op, vector<expr>& vec, z3::context &c){
+  llvm::outs()<<"\nmanage_comb\n";
+
   if(auto add = dyn_cast<comb::AddOp>(op)){
     return expr(vec[0] + vec[1]);
   } 
@@ -157,12 +161,14 @@ expr manage_comb_exp(Operation &op, vector<expr>& vec, z3::context &c){
  * @brief Returns expression from densemap or constant operator
 */
 expr getExpr(mlir::Value v, vector<std::pair<expr, mlir::Value>> expr_map, z3::context& c){
-
+  llvm::outs()<<"\ngetExpr "<<v<<"\n";
   for(auto e: expr_map){
+    llvm::outs()<<"\n expr: "<<e.first.to_string()<<", value: "<<e.second;
     if (e.second==v)
       return e.first;
   } 
   if(auto constop = dyn_cast<hw::ConstantOp>(v.getDefiningOp())){
+    llvm::outs()<<"\ntrying to retrieve a const value \n";
     return c.bv_val(constop.getValue().getSExtValue(), constop.getType().getIntOrFloatBitWidth());
   }
   llvm::errs()<<"Expression not found.";
@@ -172,8 +178,10 @@ expr getExpr(mlir::Value v, vector<std::pair<expr, mlir::Value>> expr_map, z3::c
  * @brief Returns guard expression for input region
 */
 expr getGuardExpr(vector<std::pair<expr, mlir::Value>> expr_map, Region& guard, z3::context& c){
+  llvm::outs()<<"\ngetGuard \n";
 
   for(auto &op: guard.getOps()){
+    llvm:outs()<<"\nop: "<<op;
     if (auto retop = dyn_cast<fsm::ReturnOp>(op)){
       for(auto e: expr_map)
         if (e.second==retop.getOperand())
@@ -181,6 +189,7 @@ expr getGuardExpr(vector<std::pair<expr, mlir::Value>> expr_map, Region& guard, 
     } 
     vector<expr> vec;
     for (auto operand: op.getOperands()){
+      llvm::outs()<<"\ngetting operand "<<operand;
       vec.push_back(getExpr(operand, expr_map, c));
     }
     expr_map.push_back({manage_comb_exp(op, vec, c), op.getResult(0)});
@@ -193,6 +202,7 @@ expr getGuardExpr(vector<std::pair<expr, mlir::Value>> expr_map, Region& guard, 
  * @brief Returns actions for all expressions for the input region
 */
 vector<expr> getActionExpr(Region& action, context& c, vector<mlir::Value>* to_update, vector<std::pair<expr, mlir::Value>> expr_map){
+  llvm::outs()<<"\ngetAction\n";
 
   vector<expr> updated_vec;
   for (auto v: *to_update){
@@ -398,11 +408,23 @@ expr nestedForall(vector<expr> solver_vars, expr body, long unsigned i){
  * @brief Build Z3 boolean function for each state in the state map
 */
 void populateStateInvMap(vector<string>* stateInv, context &c, vector<Z3_sort> *invInput, vector<func_decl> *stateInvFun){
+  
+  
   for(auto s: *stateInv){
     const symbol cc = c.str_symbol(s.c_str());
     Z3_func_decl I = Z3_mk_func_decl(c, cc, invInput->size(), invInput->data(), c.bool_sort());
     func_decl I2 = func_decl(c, I);
     stateInvFun->push_back(I2);
+  }
+}
+
+void populateArgInputInvMap(vector<int> argSizes, context &c, vector<Z3_sort> *invInput, vector<func_decl> *argInputs){
+  for(int i=0; i<argSizes.size(); i++){
+      const symbol cc = c.str_symbol(("input-arg"+to_string(i)).c_str());
+      llvm::outs()<<"domain: "<<&invInput->at(i)<<"\n";
+      Z3_func_decl I = Z3_mk_func_decl(c, cc, 1, &invInput->at(i), c.bv_sort(argSizes[i]));
+      func_decl I2 = func_decl(c, I);
+      argInputs->push_back(I2);
   }
 }
 
@@ -508,13 +530,7 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
 
 
 
-  for(int i=0; i<argSizes.size(); i++){
-      const symbol cc = c.str_symbol(("input-arg"+to_string(i)).c_str());
-      llvm::outs()<<"domain: "<<&invInput->at(i)<<"\n";
-      Z3_func_decl I = Z3_mk_func_decl(c, cc, 1, &invInput->at(i), c.int_sort());
-      func_decl I2 = func_decl(c, I);
-      argInputs->push_back(I2);
-  }
+  populateArgInputInvMap(argSizes, c, invInput, argInputs);
 
   populateStateInvMap(stateInv, c, invInput, stateInvFun);
 
@@ -539,26 +555,19 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
     j++;
   }
 
-  // how do I manage this and why did I even do this???? can I just initialize as variables?
-  // z3::sort bv_sort = c.bv_sort(32);
-  // z3::sort inputArraySort = c.array_sort(bv_sort, bv_sort);
-  // z3::expr array = z3::to_expr(c, Z3_mk_const(c, Z3_mk_string_symbol(c, "array"), inputArraySort));
+  // vector<func_decl> *inputVecs = new vector<func_decl>;
 
-
-  vector<vector<expr>> *inputVecs = new vector<vector<expr>>;
-
-  for(int i=0; i<int(argSizes.size()); i++){
-    vector<expr> tmp;
-    for(int j=0; j<=time; j++){
-      expr e = c.bv_const(("arg"+to_string(i)).c_str(), argSizes[i]);
-      tmp.push_back(e);
-    }
-    inputVecs->push_back(tmp);
-  }
+  // for(int i=0; i<int(argSizes.size()); i++){
+  //   for(int j=0; j<=time; j++){
+  //     expr e = c.bv_const(("arg"+to_string(i)).c_str(), argSizes[i]);
+  //     tmp.push_back(e);
+  //   }
+  //   inputVecs->push_back(tmp);
+  // }
 
   solverVarsInit->at(solverVarsInit->size()-1) = c.bv_val(0, 32);
   for(int i=0; i<int(argInputs->size()); i++){
-    solverVarsInit->at(i) =  inputVecs->at(i)[0];
+    solverVarsInit->at(i) =  argInputs->at(i)(0);
   }
 
 
@@ -568,22 +577,36 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
 
   expr body = stateInvFun->at(transitions->at(0).from)(solverVarsInit->size(), solverVarsInit->data());
   // initial condition
-  s.add(nestedForall(*solverVars, body, 0));
+  s.add(nestedForall(*solverVarsInit, body, argSizes.size()));
 
   for(auto t: *transitions){
 
+    llvm::outs()<<"\ntransition from "<<t.from<<" to "<<t.to;
+
     vector<expr> *solverVarsAfter = new vector<expr>;
+
+    // for(int i=0; i<int(argInputs->size()); i++){
+    //   solverVars->at(i) = argInputs->at(i)(solverVars->at(solverVars->size()-1));
+    // }
 
     copy(solverVars->begin(), solverVars->end(), back_inserter(*solverVarsAfter));
     solverVarsAfter->at(solverVarsAfter->size()-1) = solverVars->at(solverVars->size()-1)+1;
 
-    for(int i=0; i<int(argInputs->size()); i++){
-      solverVarsAfter->at(i) = inputVecs->at(i)[solverVars->at(solverVars->size()-1)];
-    }
 
-    for(int i=0; i<int(argInputs->size()); i++){
-      solverVars->at(i) = inputVecs->at(i)[solverVarsAfter->at(solverVarsAfter->size()-1)];
-    }
+  // I cannot index elements in a vector with an expression 
+  //   for(int i=0; i<int(argInputs->size()); i++){
+  //     solverVarsAfter->at(i) = inputVecs->at(i)[solverVars->at(solverVars->size()-1)];
+  //   }
+
+  //   for(int i=0; i<int(argInputs->size()); i++){
+  //     solverVars->at(i) = inputVecs->at(i)[solverVarsAfter->at(solverVarsAfter->size()-1)];
+  //   }
+
+    // for(int i=0; i<int(argInputs->size()); i++){
+    //   solverVarsAfter->at(i) = argInputs->at(i)(solverVarsAfter->at(solverVarsAfter->size()-1));
+    // }
+
+
 
     if(t.isGuard && t.isAction){
       expr body = implies(stateInvFun->at(t.from)(solverVars->size(), solverVars->data()) && t.guard(*solverVars), stateInvFun->at(t.to)(t.action(*solverVarsAfter).size(), t.action(*solverVarsAfter).data()));
@@ -602,7 +625,7 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
 
   }
 
-  // llvm::outs()<<"property to test: "<<property<<"\n";
+  llvm::outs()<<"property to test: "<<property<<"\n";
 
   // switch (property) {
   //   case 0: // reachability unsat
@@ -637,7 +660,7 @@ void parse_fsm(string input, int time, int property, string arg1, string arg2, s
   //     break;
   // }
 
-  // printSolverAssertions(s);
+  printSolverAssertions(s);
 
 }
 
