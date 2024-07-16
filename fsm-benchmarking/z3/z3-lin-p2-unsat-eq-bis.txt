@@ -1,0 +1,852 @@
+
+rep 0 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.17
+ :total-time                  0.19)
+
+rep 1 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.17
+ :total-time                  0.20)
+
+rep 2 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.17
+ :total-time                  0.19)
+
+rep 3 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.17
+ :total-time                  0.19)
+
+rep 4 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.16
+ :total-time                  0.18)
+
+rep 5 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.16
+ :total-time                  0.18)
+
+rep 6 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.16
+ :total-time                  0.18)
+
+rep 7 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.16
+ :total-time                  0.18)
+
+rep 8 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.17
+ :total-time                  0.19)
+
+rep 9 file ../smtlib-fsm/linear-p2-unsat/fsm_10states_0loops.smtsat
+(
+  (define-fun k!105 ((x!0 Int)) Int
+    (ite (= x!0 (- 1)) (- 1)
+    (ite (= x!0 15) 15
+    (ite (= x!0 4) 4
+    (ite (= x!0 2) 2
+    (ite (= x!0 16) 16
+    (ite (= x!0 6) 6
+    (ite (= x!0 3) 3
+    (ite (= x!0 17) 17
+    (ite (= x!0 (- 2)) (- 2)
+    (ite (= x!0 18) 18
+    (ite (= x!0 8) 8
+    (ite (= x!0 20) 20
+    (ite (= x!0 1) 1
+    (ite (= x!0 14) 14
+    (ite (= x!0 12) 12
+    (ite (= x!0 0) 0
+    (ite (= x!0 5) 5
+    (ite (= x!0 7) 7
+    (ite (= x!0 9) 9
+    (ite (= x!0 13) 13
+    (ite (= x!0 21) 21
+    (ite (= x!0 11) 11
+    (ite (= x!0 10) 10
+      19))))))))))))))))))))))))
+  (define-fun time-to-state ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 45))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 11) 31 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 13) 33 (ite (= (k!105 x!0) 12) 32 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) 16) 35 (ite (= (k!105 x!0) 14) 9 a!7))))
+    (let ((a!9 (ite (= (k!105 x!0) 18) 37 (ite (= (k!105 x!0) 17) 36 a!8))))
+    (let ((a!10 (ite (= (k!105 x!0) 20) 9 (ite (= (k!105 x!0) 19) 38 a!9))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15))
+           10
+           (ite (= (k!105 x!0) (- 1)) 40 a!10)))))))))))))
+  (define-fun var0_0 ((x!0 Int)) Int
+    (let ((a!1 (ite (= (k!105 x!0) 1) 1 (ite (= (k!105 x!0) 0) 0 46))))
+    (let ((a!2 (ite (= (k!105 x!0) 3) 3 (ite (= (k!105 x!0) 2) 2 a!1))))
+    (let ((a!3 (ite (= (k!105 x!0) 5) 5 (ite (= (k!105 x!0) 4) 4 a!2))))
+    (let ((a!4 (ite (= (k!105 x!0) 7) 7 (ite (= (k!105 x!0) 6) 6 a!3))))
+    (let ((a!5 (ite (= (k!105 x!0) 9) 9 (ite (= (k!105 x!0) 8) 8 a!4))))
+    (let ((a!6 (ite (= (k!105 x!0) 13) 0 (ite (= (k!105 x!0) 10) 10 a!5))))
+    (let ((a!7 (ite (= (k!105 x!0) 19) 0 (ite (= (k!105 x!0) 14) 1 a!6))))
+    (let ((a!8 (ite (= (k!105 x!0) (- 1)) (- 2) (ite (= (k!105 x!0) 20) 1 a!7))))
+      (ite (or (= (k!105 x!0) 21) (= (k!105 x!0) 15)) 2 a!8))))))))))
+)
+(:added-eqs                   267
+ :arith-assert-diseq          3
+ :arith-assert-lower          37
+ :arith-assert-upper          56
+ :arith-eq-adapter            50
+ :arith-fixed-eqs             18
+ :arith-num-rows              27
+ :arith-offset-eqs            2
+ :arith-pivots                37
+ :arith-row-summations        38
+ :arith-tableau-max-columns   76
+ :arith-tableau-max-rows      27
+ :binary-propagations         796
+ :conflicts                   21
+ :decisions                   386
+ :del-clause                  847
+ :final-checks                30
+ :lazy-quant-instantiations   342
+ :max-generation              15
+ :max-memory                  21.85
+ :memory                      19.74
+ :missed-quant-instantiations 19
+ :mk-bool-var                 1437
+ :mk-clause                   1014
+ :num-allocs                  7807815
+ :num-checks                  1
+ :propagations                1134
+ :quant-instantiations        574
+ :restarts                    8
+ :rlimit-count                493122
+ :time                        0.15
+ :total-time                  0.17)
+
+rep 0 file ../smtlib-fsm/linear-p2-unsat/fsm_20states_0loops.smt

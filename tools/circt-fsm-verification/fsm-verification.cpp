@@ -672,14 +672,13 @@ void populateInvInput(vector<std::pair<expr, mlir::Value>> &variables, context &
 
 }
 
-expr parseLTL(string inputFile, vector<string> stateInv, func_decl &timeToState, expr time, vector<std::pair<mlir::Value, func_decl>> &variablesFun){
+expr parseLTL(string inputFile, vector<string> stateInv, func_decl &timeToState, expr time, vector<std::pair<mlir::Value, func_decl>> &variablesFun, int tBound){
   DialectRegistry registry;
 
   registry.insert<ltl::LTLDialect>();
 
   MLIRContext context(registry);
 
-  int tBound = 160;
 
   // Parse the MLIR code into a module.
   OwningOpRef<ModuleOp> module = mlir::parseSourceFile<ModuleOp>(inputFile, &context);
@@ -737,8 +736,8 @@ expr parseLTL(string inputFile, vector<string> stateInv, func_decl &timeToState,
 
 
 
-            expr body = (timeToState(time)==insertState(state, stateInv)) == ((variablesFun[v].second(time))!=id);
-            expr ret =(((body)));
+            expr body = time>=0 && time<tBound && (timeToState(time)==insertState(state, stateInv)) && ((variablesFun[v].second(time))!=id);
+            expr ret =(exists(time, body));
 
             return ret;
           } else {
@@ -844,6 +843,8 @@ void parse_fsm(string input, string property, string output){
 
 
   expr time = c.int_const("time");
+  expr time2 = c.int_const("time2");
+
 
   Z3_sort int_sort = Z3_mk_int_sort(c);
 
@@ -866,8 +867,15 @@ void parse_fsm(string input, string property, string output){
 
   s.add(init);
 
-  int tBound = 160;
-  
+  int tBound = 500;
+
+
+  expr c1 = forall(time, implies((time<0), (timeToState(time)==-1)));
+  expr c2 = forall(time, time2, (implies((time2 > time && (timeToState(time)==int(stateInv.size()-1))), timeToState(time2)==-1)));
+
+  s.add(c1);
+  s.add(c2);
+
   for (auto t: transitions){
     if(t.isGuard && t.isAction){
       vector<expr> tmpAc = t.action(time);
@@ -875,10 +883,10 @@ void parse_fsm(string input, string property, string output){
       for(int i = arguments.size()+1; i<variablesFun.size(); i++){
         tmp = tmp && (variablesFun[i].second(time+1) == tmpAc[i]);
       }
-      expr a = forall(time, (implies(timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to && tmp))));
+      expr a = forall(time, implies(time>=0 && time<tBound && timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to && tmp)));
       s.add(a);
     } else if (t.isGuard){
-      expr a = forall(time, (implies(timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to))));
+      expr a = forall(time, implies(time>=0 && time<tBound && timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to)));
       s.add(a);
     } else if (t.isAction){
       vector<expr> tmpAc = t.action(time);
@@ -886,20 +894,28 @@ void parse_fsm(string input, string property, string output){
       for(int i = arguments.size()+1; i<variablesFun.size(); i++){
         tmp = tmp && (variablesFun[i].second(time+1) == tmpAc[i]);
       }
-      expr a = forall(time, (implies((timeToState(time)==t.from), (timeToState(time+1)==t.to && tmp))));
+      expr a = forall(time, implies(time>=0 && time<tBound && (timeToState(time)==t.from), (timeToState(time+1)==t.to && tmp)));
       s.add(a);
 
     } else {
-      expr a = forall(time, implies((timeToState(time)==t.from), timeToState(time+1)==t.to));
+      expr a = forall(time, implies(time>=0 && time<tBound && (timeToState(time)==t.from), timeToState(time+1)==t.to));
       s.add(a);
     }
   }
+  // expr tmp = (variablesFun[arguments.size()].second(time+1) == variablesFun[arguments.size()].second(time));
+  // for(int i = arguments.size()+1; i<variablesFun.size(); i++){
+  //   tmp = tmp && (variablesFun[i].second(time+1) == variablesFun[arguments.size()].second(time));
+  // }
+  // expr a = forall(time, implies((timeToState(time)==transitions[transitions.size()-1].to), timeToState(time+1)==timeToState(time) && tmp));
+  // s.add(a);
 
-  expr r = parseLTL(property, stateInv, timeToState, time, variablesFun);
+
+
+  expr r = parseLTL(property, stateInv, timeToState, time, variablesFun, tBound);
 
 
 
-  s.add(forall(time, r));
+  s.add((r));
 
 
   printSolverAssertions(s, output);
