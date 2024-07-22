@@ -3,9 +3,9 @@ import os
 
 reps = 10
 
-folder = "../smtlib-fsm/linear-p2-unsat/"
+folder = "../smtlib-fsm/lin-p1/"
 
-outputfile = open("z3-lin-p2-unsat-eq-ter.txt", "w")
+outputfile = open("z3-lin-p1-unsat.txt", "w")
 
 for file in os.listdir(folder):
     print(file)

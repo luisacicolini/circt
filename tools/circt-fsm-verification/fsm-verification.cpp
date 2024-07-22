@@ -701,7 +701,7 @@ expr parseLTL(string inputFile, vector<string> stateInv, func_decl &timeToState,
 
             llvm::outs()<<"\n\n\nTesting reachability of state "<<insertState(state, stateInv);
 
-            expr ret = ((((timeToState(time)!= insertState(state, stateInv)))));
+            expr ret = (forall(time, (timeToState(time) != insertState(state, stateInv))));
             return ret;
           } else {
             llvm::outs()<<"Reachability Property can not be parsed."; 
@@ -736,7 +736,7 @@ expr parseLTL(string inputFile, vector<string> stateInv, func_decl &timeToState,
 
 
 
-            expr body = time>=0 && time<tBound && (timeToState(time)==insertState(state, stateInv)) && ((variablesFun[v].second(time))!=id);
+            expr body = implies(time>=0 && time<tBound, (timeToState(time)==insertState(state, stateInv)) != ((variablesFun[v].second(time))!=id));
             expr ret =(exists(time, body));
 
             return ret;
@@ -777,8 +777,8 @@ expr parseLTL(string inputFile, vector<string> stateInv, func_decl &timeToState,
               os3.flush();
               state = state.substr(1, state.size() - 2);
 
-              expr body = ((timeToState(time)==insertState(state, stateInv)) && ((variablesFun[input].second(time))!=signal));
-              expr ret = (((body)));
+              expr body = ((timeToState(time+1)!=insertState(state, stateInv)) && ((variablesFun[input].second(time))==signal));
+              expr ret = (exists(time, implies(time>=0 && time < tBound-1, (body))));
               return ret;
           } else{
             llvm::outs()<<"Error Management Property can not be parsed.";
@@ -883,10 +883,13 @@ void parse_fsm(string input, string property, string output){
       for(int i = arguments.size()+1; i<variablesFun.size(); i++){
         tmp = tmp && (variablesFun[i].second(time+1) == tmpAc[i]);
       }
-      expr a = forall(time, implies(time>=0 && time<tBound && timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to && tmp)));
+      expr body = implies(time>=0 && time<tBound && timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to && tmp));
+      expr pattern = Z3_mk_pattern(c, 1, body);
+      expr a = forall(time, pattern);
       s.add(a);
     } else if (t.isGuard){
-      expr a = forall(time, implies(time>=0 && time<tBound && timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to)));
+      expr pattern = c.mk_pattern(implies(time>=0 && time<tBound && timeToState(time)==t.from && t.guard(time), (timeToState(time+1)==t.to)));
+      expr a = forall(time, pattern);
       s.add(a);
     } else if (t.isAction){
       vector<expr> tmpAc = t.action(time);
@@ -894,11 +897,13 @@ void parse_fsm(string input, string property, string output){
       for(int i = arguments.size()+1; i<variablesFun.size(); i++){
         tmp = tmp && (variablesFun[i].second(time+1) == tmpAc[i]);
       }
-      expr a = forall(time, implies(time>=0 && time<tBound && (timeToState(time)==t.from), (timeToState(time+1)==t.to && tmp)));
+      expr pattern = c.mk_pattern(implies(time>=0 && time<tBound && (timeToState(time)==t.from), (timeToState(time+1)==t.to && tmp)));
+      expr a = forall(time, pattern);
       s.add(a);
 
     } else {
-      expr a = forall(time, implies(time>=0 && time<tBound && (timeToState(time)==t.from), timeToState(time+1)==t.to));
+      expr pattern = c.mk_pattern(implies(time>=0 && time<tBound && (timeToState(time)==t.from), timeToState(time+1)==t.to))
+      expr a = forall(time, pattern);
       s.add(a);
     }
   }
