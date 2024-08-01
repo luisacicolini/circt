@@ -841,16 +841,27 @@ void parseFSM(string input, string property, string output) {
   vector<expr> solverVarsInit;
   copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsInit));
 
-  for(int i=numArgs; i<int(variables.size()); i++){
+  for(int i=0; i<int(variables.size()); i++){
 
-    if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
-      int initValue =
-      stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("_")+1));
-      solverVarsInit[i] = c.int_val(initValue);
-    } else {
-      bool initValue = stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("_")+1));
-      solverVarsInit.at(i) = c.bool_val(initValue);
+    if (i<numArgs){
+      if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
+        solverVarsInit[i] = c.int_val(0);
+      } else {
+        solverVarsInit.at(i) = c.bool_val(false);
+      }
+    } else{
+      if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
+        int initValue =
+        stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("_")+1));
+        solverVarsInit[i] = c.int_val(initValue);
+      } else {
+        bool initValue = stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("_")+1));
+        solverVarsInit.at(i) = c.bool_val(initValue);
+      }
+
     }
+
+
   }
   // for (int i = 0; i < numArgs; i++) {
   //   solverVarsInit[i] = argInputs[i](0);
