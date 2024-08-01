@@ -43,29 +43,6 @@ for n in num_fsm:
         rows.append(s)
         cols.append(s+1)
 
-        if(s in loops):
-            g = np.random.randint(s, s*2)
-            while g in guard_vals:
-                g = np.random.randint(s, s*2)
-            guard_vals.append(g)
-            const.append(g)
-            # transition with guard 
-            guards.append(str(guard_type[1])+"x0, %c"+str(g))
-            actions.append(action+"x0, %c1")
-            backprop = np.random.randint(0, s-1)
-            # also add loop transition
-            rows.append(s)
-            cols.append(backprop)
-            guards.append(str(guard_type[0])+"x0, %c"+str(g))
-            actions.append(action+"x0, %c1")
-            print("from "+str(s)+" to "+str(backprop))
-
-
-        else:
-            # standard transition, no guard, action only
-            guards.append("NULL")
-            actions.append(action+"x0, %c1")
-
         print("from "+str(s)+" to "+str(s+1))
 
     print("transitions: "+str(len(rows)))
@@ -85,20 +62,12 @@ for n in num_fsm:
         for i in range(len(rows)):
             if rows[i] == st:
                 f.write("\n\t\tfsm.transition @_"+str(cols[i]))
-                if guards[i]!="NULL":
-                    f.write("\n\t\t\tguard {")
-                    f.write("\n\t\t\t\t%tmp1 = "+guards[i]+" : i16")
-                    f.write("\n\t\t\t\t%tmp2 = comb.icmp ne %err, %c0 : i16")
-                    f.write("\n\t\t\t\t%tmp3 = comb.and %tmp1, %tmp2 : i16")
-                    f.write("\n\t\t\t\tfsm.return %tmp3")
-                    f.write("\n\t\t\t} action {")
-                else: #default guard: not error 
-                    f.write("\n\t\t\tguard {")
-                    f.write("\n\t\t\t\t%tmp1 = comb.icmp ne %err, %c0 : i16")
-                    f.write("\n\t\t\t\tfsm.return %tmp1")
-                    f.write("\n\t\t\t} action {")
-                    f.write("\n\t\t\t\t%tmp = "+actions[i]+" : i16")
-                    f.write("\n\t\t\t\tfsm.update %x0, %tmp : i16")
+                f.write("\n\t\t\tguard {")
+                f.write("\n\t\t\t\t%tmp1 = comb.icmp ne %err, %c1 : i16")
+                f.write("\n\t\t\t\tfsm.return %tmp1")
+                f.write("\n\t\t\t} action {")
+                f.write("\n\t\t\t\t%tmp = "+action+"x0, %c1 : i16")
+                f.write("\n\t\t\t\tfsm.update %x0, %tmp : i16")
                 f.write("\n\t\t\t}")
         # always add error transition
         f.write("\n\t\tfsm.transition @ERR")

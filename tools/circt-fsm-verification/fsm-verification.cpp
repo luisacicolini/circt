@@ -720,7 +720,7 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             //       argInputs[i](solverVarsAfter[solverVarsAfter.size() - 1]);
             // }
 
-            expr body = implies((solverVars[signal]==input), !(stateInvFun[insertState(state, stateInv)])(solverVarsAfter.size(), solverVarsAfter.data()));
+            expr body = implies((solverVars[signal]==input) && !(stateInvFun[insertState(state, stateInv)])(solverVarsAfter.size(), solverVarsAfter.data()), false);
 
             llvm::outs()<<body.to_string()<<"\n\n";
 

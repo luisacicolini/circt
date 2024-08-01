@@ -7,9 +7,9 @@ prop = 1
 # example command
 # ninja && valgrind bin/fsm-verification ../fsm_examples/input-err-state/errstate-fsm/fsm_5states_0loops.mlir ../fsm_examples/ltl_p3.mlir 4
 
-folder ="fsm/lin-var-8/"
+folder ="fsm/err/"
 
-target="smtlib-fsm/lin-p1-v8/"
+target="smtlib-fsm/err-p3/"
 
 
 for filename in os.listdir("../"+target):
@@ -22,7 +22,7 @@ for filename in os.listdir("../"+target):
 for file in os.listdir("../"+folder):
     print(file)
     # pay attention to this line before running stuff
-    states = int(file.split("_")[2].split("s")[0])
+    states = int(file.split("_")[1].split("s")[0])
     
 
     ltl = open("tmp_prop.mlir", "w")
