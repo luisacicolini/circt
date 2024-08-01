@@ -10,7 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "PassDetails.h"
 #include "circt/Dialect/FIRRTL/AnnotationDetails.h"
 #include "circt/Dialect/FIRRTL/FIRRTLAttributes.h"
 #include "circt/Dialect/FIRRTL/FIRRTLInstanceGraph.h"
@@ -25,6 +24,7 @@
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/Threading.h"
+#include "mlir/Pass/Pass.h"
 #include "mlir/Support/LogicalResult.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseMapInfo.h"
@@ -34,6 +34,13 @@
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/SHA256.h"
+
+namespace circt {
+namespace firrtl {
+#define GEN_PASS_DEF_DEDUP
+#include "circt/Dialect/FIRRTL/Passes.h.inc"
+} // namespace firrtl
+} // namespace circt
 
 using namespace circt;
 using namespace firrtl;
@@ -71,8 +78,17 @@ struct ModuleInfo {
   mlir::ArrayAttr referredModuleNames;
 };
 
-struct SymbolTarget {
+/// Unique identifier for a value.  All value sources are numbered by apperance,
+/// and values are identified using this numbering (`index`) and an `offset`.
+/// For BlockArgument's, this is the argument number.
+/// For OpResult's, this is the result number.
+struct ValueId {
   uint64_t index;
+  uint64_t offset;
+};
+
+struct SymbolTarget {
+  ValueId index;
   uint64_t fieldID;
 };
 
@@ -154,14 +170,19 @@ private:
 
   void record(void *address) {
     auto size = indices.size();
+    assert(!indices.contains(address));
     indices[address] = size;
   }
 
-  void update(BlockArgument arg) { record(arg.getAsOpaquePointer()); }
+  /// Get the unique id for the specified value.
+  ValueId getId(Value val) {
+    if (auto arg = dyn_cast<BlockArgument>(val))
+      return {indices.at(arg.getOwner()), arg.getArgNumber()};
+    auto result = cast<OpResult>(val);
+    return {indices.at(result.getOwner()), result.getResultNumber()};
+  }
 
   void update(OpResult result) {
-    record(result.getAsOpaquePointer());
-
     // Like instance ops, don't use object ops' result types since they might be
     // replaced by dedup. Record the class names and lazily combine their hashes
     // using the same mechanism as instances and modules.
@@ -173,23 +194,23 @@ private:
     update(result.getType());
   }
 
-  void update(OpOperand &operand) {
-    // We hash the value's index as it apears in the block.
-    auto it = indices.find(operand.get().getAsOpaquePointer());
-    assert(it != indices.end() && "op should have been previously hashed");
-    update(it->second);
+  void update(ValueId index) {
+    update(index.index);
+    update(index.offset);
   }
+
+  void update(OpOperand &operand) { update(getId(operand.get())); }
 
   void update(Operation *op, hw::InnerSymAttr attr) {
     for (auto props : attr)
       innerSymTargets[props.getName()] =
-          SymbolTarget{indices[op], props.getFieldID()};
+          SymbolTarget{{indices.at(op), 0}, props.getFieldID()};
   }
 
   void update(Value value, hw::InnerSymAttr attr) {
     for (auto props : attr)
       innerSymTargets[props.getName()] =
-          SymbolTarget{indices[value.getAsOpaquePointer()], props.getFieldID()};
+          SymbolTarget{getId(value), props.getFieldID()};
   }
 
   void update(const SymbolTarget &target) {
@@ -274,15 +295,6 @@ private:
     }
   }
 
-  void update(Block &block) {
-    // Hash the block arguments.
-    for (auto arg : block.getArguments())
-      update(arg);
-    // Hash the operations in the block.
-    for (auto &op : block)
-      update(&op);
-  }
-
   void update(mlir::OperationName name) {
     // Operation names are interned.
     update(name.getAsOpaquePointer());
@@ -292,26 +304,44 @@ private:
   void update(Operation *op) {
     record(op);
     update(op->getName());
-    update(op, op->getAttrDictionary());
+
     // Hash the operands.
     for (auto &operand : op->getOpOperands())
       update(operand);
+
+    // Number the block pointers, for use numbering their arguments.
+    for (auto &region : op->getRegions())
+      for (auto &block : region.getBlocks())
+        record(&block);
+
+    // This happens after the numbering above, as it uses blockarg numbering
+    // for inner symbols.
+    update(op, op->getAttrDictionary());
+
     // Hash the regions. We need to make sure an empty region doesn't hash the
     // same as no region, so we include the number of regions.
     update(op->getNumRegions());
-    for (auto &region : op->getRegions())
-      for (auto &block : region.getBlocks())
-        update(block);
-    // Record any op results.
+    for (auto &region : op->getRegions()) {
+      update(region.getBlocks().size());
+      for (auto &block : region.getBlocks()) {
+        update(indices.at(&block));
+        for (auto argType : block.getArgumentTypes())
+          update(argType);
+        for (auto &op : block)
+          update(&op);
+      }
+    }
+
+    // Record any op results (types).
     for (auto result : op->getResults())
       update(result);
   }
 
-  // Every operation and value is assigned a unique id based on their order of
-  // appearance
+  // Every operation and block is assigned a unique id based on their order of
+  // appearance.  All values are uniquely identified using these.
   DenseMap<void *, unsigned> indices;
 
-  // Every value is assigned a unique id based on their order of appearance.
+  // Track inner symbol name -> target's unique identification.
   DenseMap<StringAttr, SymbolTarget> innerSymTargets;
 
   // This keeps track of module names in the order of the appearance.
@@ -750,13 +780,11 @@ struct Equivalence {
     hw::InnerSymbolTable aTable(a);
     hw::InnerSymbolTable bTable(b);
     ModuleData data(aTable, bTable);
-    AnnotationSet aAnnos(a);
-    AnnotationSet bAnnos(b);
-    if (aAnnos.hasAnnotation(noDedupClass)) {
+    if (AnnotationSet::hasAnnotation(a, noDedupClass)) {
       diag.attachNote(a->getLoc()) << "module marked NoDedup";
       return;
     }
-    if (bAnnos.hasAnnotation(noDedupClass)) {
+    if (AnnotationSet::hasAnnotation(b, noDedupClass)) {
       diag.attachNote(b->getLoc()) << "module marked NoDedup";
       return;
     }
@@ -1569,7 +1597,7 @@ struct DenseMapInfo<ModuleInfo> {
 //===----------------------------------------------------------------------===//
 
 namespace {
-class DedupPass : public DedupBase<DedupPass> {
+class DedupPass : public circt::firrtl::impl::DedupBase<DedupPass> {
   void runOnOperation() override {
     auto *context = &getContext();
     auto circuit = getOperation();
@@ -1637,15 +1665,8 @@ class DedupPass : public DedupBase<DedupPass> {
     auto result = mlir::failableParallelForEach(
         context, llvm::seq(modules.size()), [&](unsigned idx) {
           auto module = modules[idx];
-          AnnotationSet annotations(module);
           // If the module is marked with NoDedup, just skip it.
-          if (annotations.hasAnnotation(noDedupClass))
-            return success();
-
-          // If the module has input RefType ports, also skip it.
-          if (llvm::any_of(module.getPorts(), [&](PortInfo port) {
-                return type_isa<RefType>(port.type) && port.isInput();
-              }))
+          if (AnnotationSet::hasAnnotation(module, noDedupClass))
             return success();
 
           // Only dedup extmodule's with defname.
@@ -1736,15 +1757,12 @@ class DedupPass : public DedupBase<DedupPass> {
                               "MustDeduplicateAnnotation references module ")
                     << module << " which does not exist";
         failed = true;
-        return 0;
+        return nullptr;
       }
       return it->second;
     };
 
     AnnotationSet::removeAnnotations(circuit, [&](Annotation annotation) {
-      // If we have already failed, don't process any more annotations.
-      if (failed)
-        return false;
       if (!annotation.isClass(mustDedupAnnoClass))
         return false;
       auto modules = annotation.getMember<ArrayAttr>("modules");
@@ -1755,18 +1773,18 @@ class DedupPass : public DedupBase<DedupPass> {
         return false;
       }
       // Empty module list has nothing to process.
-      if (modules.size() == 0)
+      if (modules.empty())
         return true;
       // Get the first element.
       auto firstModule = parseModule(modules[0]);
       auto firstLead = getLead(firstModule);
-      if (failed)
+      if (!firstLead)
         return false;
       // Verify that the remaining elements are all the same as the first.
       for (auto attr : modules.getValue().drop_front()) {
         auto nextModule = parseModule(attr);
         auto nextLead = getLead(nextModule);
-        if (failed)
+        if (!nextLead)
           return false;
         if (firstLead != nextLead) {
           auto diag = emitError(circuit.getLoc(), "module ")
