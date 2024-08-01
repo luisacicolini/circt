@@ -888,19 +888,29 @@ void parseFSM(string input, string property, string output) {
   for (auto t : transitions) {
 
     vector<expr> solverVarsAfter;
-
-    // for (int i = 0; i < int(argInputs.size()); i++) {
-    //   solverVars[i] = argInputs[i](solverVars[solverVars.size() - 1]);
-    // }
+    vector<expr> solverVarsAll;
 
     copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
+    copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAll));
+
+
+
+
+    for (int i = 0; i < numArgs; i++) {
+      expr tmp(c);
+      if(solverVars[i].is_bool()){
+        tmp = c.bool_const((solverVars[i].to_string()+"p").c_str());
+      } else {
+        tmp = c.int_const((solverVars[i].to_string()+"p").c_str());
+      }
+      solverVarsAfter[i] = tmp;
+    }
+
+
     solverVarsAfter.at(solverVarsAfter.size() - 1) =
         solverVars[solverVars.size() - 1] + 1;
 
-    // for (int i = 0; i < int(argInputs.size()); i++) {
-    //   solverVarsAfter[i] =
-    //       argInputs[i](solverVarsAfter.at(solverVarsAfter.size() - 1));
-    // }
+
 
     if (t.isOutput) {
       if (t.isGuard && t.isAction) {
@@ -961,16 +971,16 @@ void parseFSM(string input, string property, string output) {
     }
   }
 
-  // for(auto state1 : stateInvFun){
-  //   expr mutualExc = c.bool_val(true);
-  //   for(auto state2: stateInvFun){
-  //     if(state1.to_string() != state2.to_string()){
-  //       mutualExc = mutualExc && !state2(solverVars.size(), solverVars.data());
-  //     }
-  //   }
-  //   expr stateMutualExc = implies(state1(solverVars.size(), solverVars.data()), mutualExc);
-  //   s.add(nestedForall(solverVars, stateMutualExc, numArgs, numOutputs, c));
-  // }
+  for(auto state1 : stateInvFun){
+    expr mutualExc = c.bool_val(true);
+    for(auto state2: stateInvFun){
+      if(state1.to_string() != state2.to_string()){
+        mutualExc = mutualExc && !state2(solverVars.size(), solverVars.data());
+      }
+    }
+    expr stateMutualExc = implies(state1(solverVars.size(), solverVars.data()), mutualExc);
+    s.add(nestedForall(solverVars, stateMutualExc, numArgs, numOutputs, c));
+  }
 
   expr r = parseLTL(property, solverVars, stateInv, stateInvFun,
                     0, numOutputs, c);

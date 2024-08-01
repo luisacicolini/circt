@@ -16,7 +16,7 @@ for num_states in num_fsm:
         const = []
 
     
-        output_file = "../fsm/lin-var-"+str(n)+"/fsm_"+str(n)+"var_"+str(num_states) +"states.mlir"
+        output_file = "../fsm/lin-var-"+str(n)+"/fsm_"+str(num_states)+"states_"+str(n) +"var.mlir"
         f = open(output_file, "w")
 
         vars = []
