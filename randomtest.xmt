@@ -1,0 +1,46 @@
+(set-logic HORN)
+
+(declare-fun I0 (Int Int) Bool)
+(declare-fun I1 (Int Int) Bool)
+(declare-fun I2 (Int Int) Bool)
+
+(assert (forall ((x Int) (y Int))
+    (I0 x y)
+))
+
+(assert (forall ((x Int) (y Int))
+    (=> 
+    (I0 x y)
+    (I1 0 0))
+))
+
+(assert (forall ((x Int) (y Int))
+    (=> 
+    (I1 x y)
+    (I2 (+ x 1) (+ y 1)))
+))
+
+(assert (forall ((x Int) (y Int))
+    (=> 
+    (I2 x y)
+    (I1 (+ x 2) (+ y 2)))
+))
+
+(assert (forall ((x Int) (y Int)) 
+    (=> 
+    (and (I1 x y) (< y x)) 
+    false)
+))
+
+(assert (forall ((x Int) (y Int)) 
+    (=> (and (I1 x y) (< y x)) 
+    false)
+))
+
+(assert (forall ((x Int) (y Int)) 
+    (=> (and (I1 x y) (< y x)) 
+    false)
+))
+
+(check-sat)
+(get-model)

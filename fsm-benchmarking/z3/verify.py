@@ -3,9 +3,9 @@ import os
 
 reps = 10
 
-folder = "../smtlib-fsm/lin-p1-v1/"
+folder = "../smtlib-fsm/lin-p1/"
 
-outputfile = open("z3-linear-p1-3007-v1.txt", "w")
+outputfile = open("z3-linear-p1-0408-v1.txt", "w")
 
 for file in os.listdir(folder):
     print(file)

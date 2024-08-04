@@ -2,14 +2,14 @@ import numpy as np
 import subprocess 
 import os
 
-prop = 3
+prop = 1
 
 # example command
 # ninja && valgrind bin/fsm-verification ../fsm_examples/input-err-state/errstate-fsm/fsm_5states_0loops.mlir ../fsm_examples/ltl_p3.mlir 4
 
-folder ="fsm/err/"
+folder ="fsm/linear/"
 
-target="smtlib-fsm/err-p3/"
+target="smtlib-fsm/lin-p1/"
 
 
 for filename in os.listdir("../"+target):
