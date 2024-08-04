@@ -913,12 +913,11 @@ void parseFSM(string input, string property, string output) {
   s.add(nestedForall(solverVars, body, 0, numOutputs, c));
   vector<expr> solverVarsAfter;
   vector<expr> solverVarsAll;
+  vector<expr> solverVarsMutEx;
 
   copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
   copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAll));
-
-
-
+  copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsMutEx));
 
   for (int i = 0; i < (int(solverVars.size())); i++) {
     expr tmp(c);
@@ -928,10 +927,11 @@ void parseFSM(string input, string property, string output) {
       tmp = c.int_const((solverVars[i].to_string()+"_p").c_str());
     }
     solverVarsAfter[i] = tmp;
+    solverVarsMutEx[i] = tmp;
     solverVarsAll.push_back(tmp);
   }
 
-
+  solverVarsMutEx[solverVarsMutEx.size()-1] = solverVars[solverVars.size()-1];
 
   for (auto t : transitions) {
 
@@ -1003,21 +1003,29 @@ void parseFSM(string input, string property, string output) {
     }
   }
 
+  solverVarsAfter[solverVarsAfter.size()-1] = solverVars[solverVars.size()-1];
+
   for(auto state1 : stateInvFun){
     expr mutualExc = c.bool_val(true);
     for(auto state2: stateInvFun){
       if(state1.to_string() != state2.to_string()){
-        mutualExc = mutualExc && !state2(int(solverVars.size()), solverVars.data());
+        mutualExc = mutualExc && !state2(int(solverVarsAfter.size()), solverVarsAfter.data());
       }
     }
-    mutualExc = mutualExc && !state1(solverVarsAfter.size(), solverVarsAfter.data());
-    for(auto [b, a]: llvm::zip(solverVars, solverVarsAfter)){
-      if (b.to_string()!="time")
-        mutualExc = mutualExc && a!=b;
-    }
     expr stateMutualExc = implies(state1(int(solverVars.size()), solverVars.data()), mutualExc);
-    s.add(nestedForall(solverVarsAll, stateMutualExc, numArgs, numOutputs, c));
+    s.add(nestedForall(solverVarsAll, stateMutualExc, numArgs, numOutputs, c));    
+    expr varMutEx = c.bool_val(true);
+    for(auto [a,b]: llvm::zip(solverVars, solverVarsAfter)){
+      if (a.to_string()!="time")
+        varMutEx = varMutEx && a!=b;
+    }
+    expr stateVarMutExc = implies(state1(int(solverVars.size()), solverVars.data()) && varMutEx, 
+        !state1(int(solverVarsAfter.size()), solverVarsAfter.data()));
+    s.add(nestedForall(solverVarsAll, stateVarMutExc, numArgs, numOutputs, c));    
+
   }
+
+
 
   expr r = parseLTL(property, solverVars, stateInv, stateInvFun,
                     0, numOutputs, c);
