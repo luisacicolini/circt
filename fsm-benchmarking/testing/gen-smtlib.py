@@ -2,14 +2,14 @@ import numpy as np
 import subprocess 
 import os
 
-prop = 1
+prop = 3
 
 # example command
 # ninja && valgrind bin/fsm-verification ../fsm_examples/input-err-state/errstate-fsm/fsm_5states_0loops.mlir ../fsm_examples/ltl_p3.mlir 4
 
-folder ="fsm/linear/"
+folder ="fsm/err/"
 
-target="smtlib-fsm/lin-p1/"
+target="smtlib-fsm/err-p3/"
 
 
 for filename in os.listdir("../"+target):
@@ -39,6 +39,11 @@ for file in os.listdir("../"+folder):
         ltl.write("%error = unrealized_conversion_cast to !ltl.sequence\n")
         ltl.write("%state = unrealized_conversion_cast to !ltl.sequence\n")
         ltl.write("%e0 = ltl.implication %error, %state {state = \"ERR\", signal= \"0\", input = \"1\"}: !ltl.sequence, !ltl.sequence")
+
+# %error = unrealized_conversion_cast to !ltl.sequence
+# %state = unrealized_conversion_cast to !ltl.sequence
+# %e0 = ltl.implication %error, %state {state = "ERR", signal= "0", input = "1"}: !ltl.sequence, !ltl.sequence
+
 
     ltl.close()
 
