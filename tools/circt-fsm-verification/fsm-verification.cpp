@@ -13,6 +13,7 @@
 #include <iostream>
 #include <vector>
 #include <z3++.h>
+#include <z3_api.h>
 
 #define V 0
 
@@ -37,7 +38,7 @@ struct transition {
  * @brief Prints solver assertions
 */
 void printSolverAssertions(z3::context &c, z3::solver &solver, string output,
-                           vector<func_decl> stateInvFun) {
+                           vector<func_decl> &stateInvFun, vector<func_decl> &argInputs) {
 
   ofstream outfile;
   outfile.open(output);
@@ -52,6 +53,9 @@ void printSolverAssertions(z3::context &c, z3::solver &solver, string output,
     outfile << fd.to_string() << "\n";
   }
 
+  for (auto fd : argInputs) {
+    outfile << fd.to_string() << "\n";
+  }
   for (unsigned i = 0; i < assertions.size(); ++i) {
     Z3_ast ast = assertions[i];
     outfile << "(assert " << Z3_ast_to_string(c, ast) << ")" << std::endl;
@@ -268,8 +272,9 @@ vector<expr> getActionExpr(Region &action, context &c,
     }
     if (!found) {
       for (auto e : exprMap) {
-        if (e.second == v)
+        if (e.second == v){
           updatedVec.push_back(e.first);
+        }
       }
     }
   }
@@ -354,7 +359,7 @@ int populateOutputs(Operation &mod, vector<mlir::Value> &vecVal,
  */
 void populateVars(Operation &mod, vector<mlir::Value> &vecVal,
                   vector<std::pair<expr, mlir::Value>> &variables,
-                  z3::context &c, int numArgs) {
+                  z3::context &c, int numArgs, vector<int> &initValues) {
   for (Region &rg : mod.getRegions()) {
     for (Block &bl : rg) {
       for (Operation &op : bl) {
@@ -367,6 +372,7 @@ void populateVars(Operation &mod, vector<mlir::Value> &vecVal,
                   int initValue =
                       varOp.getInitValue().cast<IntegerAttr>().getInt();
                   string varName = varOp.getName().str();
+                  initValues.push_back(initValue);
                   if (varOp.getName().str().find("arg") != std::string::npos) {
                     // reserved keyword arg for arguments to avoid ambiguity
                     // when setting initial state values
@@ -374,10 +380,11 @@ void populateVars(Operation &mod, vector<mlir::Value> &vecVal,
                     numArgs++;
                   }
                   expr input = c.bool_const(
-                      (varName + "_" + to_string(initValue)).c_str());
+                      (varName).c_str());
+
                   if (varOp.getResult().getType().getIntOrFloatBitWidth() > 1) {
                     input = c.int_const(
-                        (varName + "_" + to_string(initValue)).c_str());
+                        (varName).c_str());
                   }
                   variables.push_back({input, varOp.getResult()});
                 }
@@ -461,7 +468,6 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                         // action
                         if (!trRegions[1]->empty()) {
                           Region &r = *trRegions[1];
-                          vector<mlir::Value> toUpdate = actionsCounter(r);
                           z3FunA a = [&r, &vecVal,
                                       &c](vector<expr> vec) -> vector<expr> {
                             expr time = vec[vec.size() - 1];
@@ -473,6 +479,14 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                                 getActionExpr(r, c, vecVal, tmpVar);
                             vec2.push_back(time);
                             return vec2;
+                          };
+                          t.action = a;
+                          t.isAction = true;
+                        } else {
+                            Region &r = *trRegions[1];
+                            z3FunA a = [&r, &vecVal,
+                                      &c](vector<expr> vec) -> vector<expr> {
+                            return vec;
                           };
                           t.action = a;
                           t.isAction = true;
@@ -747,12 +761,30 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
   return c.bool_val(true);
 }
 
-expr computeAction(vector<expr> before, vector<expr> after, context &c){
+expr computeAction(vector<expr> before, vector<expr> after, context &c, int numArgs){
+  llvm::outs()<<"\nthere are numArgs: "<<numArgs;
   expr r = c.bool_val(true);
+  int id = 0;
   for (auto [b, a]: llvm::zip(before, after)){
-    if (b.to_string()!="time")
+    if (b.to_string()!="time_p" && id>=numArgs)
       r = r && (b == a);
+    id = id + 1;
   }
+  llvm::outs()<<"action: "<<r.to_string();
+
+  return r;
+}
+
+expr computeInputs(vector<func_decl> argInputs, vector<expr> after, context &c){
+  llvm::outs()<<"\noooo are numArgs: \n";
+  expr r = c.bool_val(true);
+  int id = 0;
+  for (auto a: argInputs){
+    llvm::outs()<<a.to_string();
+    r = r && argInputs[id](after[id], after[after.size()-1]);
+    id = id + 1;
+  }
+  llvm::outs()<<"inputs: "<<r.to_string();
   return r;
 }
 
@@ -817,7 +849,9 @@ void parseFSM(string input, string property, string output) {
 
   int numArgs = populateArgs(mod, vecVal, variables, c);
 
-  populateVars(mod, vecVal, variables, c, numArgs);
+  vector<int> initValues;
+
+  populateVars(mod, vecVal, variables, c, numArgs, initValues);
 
   int numOutputs = populateOutputs(mod, vecVal, variables, c, context, module);
 
@@ -829,7 +863,7 @@ void parseFSM(string input, string property, string output) {
 
   vector<Z3_sort> invInput;
 
-  // vector<func_decl> argInputs;
+  vector<func_decl> argInputs;
 
   vector<func_decl> stateInvFun;
 
@@ -846,13 +880,16 @@ void parseFSM(string input, string property, string output) {
   if (V)
     llvm::outs() << "number of args: " << numArgs << "\n\n";
 
-  // for (int i = 0; i < numArgs; i++) {
-  //   const symbol cc = c.str_symbol(("input-arg" + to_string(i)).c_str());
-  //   Z3_func_decl I =
-  //       Z3_mk_func_decl(c, cc, 1, &invInput[invInput.size() - 1], c.int_sort());
-  //   func_decl I2 = func_decl(c, I);
-  //   argInputs.push_back(I2);
-  // }
+  for (int i = 0; i < numArgs; i++) {
+    vector<Z3_sort> domain;
+    domain.push_back(invInput[i]);
+    domain.push_back(invInput[invInput.size() - 1]);
+    const symbol cc = c.str_symbol(("input-arg" + to_string(i)).c_str());
+    Z3_func_decl I =
+        Z3_mk_func_decl(c, cc, domain.size(), domain.data(), c.bool_sort());
+    func_decl I2 = func_decl(c, I);
+    argInputs.push_back(I2);
+  }
 
   populateStateInvMap(stateInv, c, invInput, stateInvFun);
 
@@ -868,25 +905,24 @@ void parseFSM(string input, string property, string output) {
   vector<expr> solverVarsInit;
   copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsInit));
 
-  for(int i=0; i<int(variables.size()); i++){
+  for(int i=numArgs; i<int(variables.size()); i++){
 
-    if (i<numArgs){
-      if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
-        solverVarsInit[i] = c.int_val(0);
-      } else {
-        solverVarsInit.at(i) = c.bool_val(false);
-      }
-    } else{
-      if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
-        int initValue =
-        stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("_")+1));
-        solverVarsInit[i] = c.int_val(initValue);
-      } else {
-        bool initValue = stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("_")+1));
-        solverVarsInit.at(i) = c.bool_val(initValue);
-      }
-
+    // if (i<numArgs){
+    //   if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
+    //     solverVarsInit[i] = c.int_val(0);
+    //   } else {
+    //     solverVarsInit.at(i) = c.bool_val(false);
+    //   }
+    // } else{
+    if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
+      // int initValue =
+      // stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("__")+1));
+      solverVarsInit[i] = c.int_val(initValues[i-numArgs]);
+    } else {
+      // bool initValue = stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("__")+1));
+      solverVarsInit.at(i) = c.bool_val(initValues[i-numArgs]);
     }
+    // }
 
 
   }
@@ -931,6 +967,10 @@ void parseFSM(string input, string property, string output) {
     solverVarsAll.push_back(tmp);
   }
 
+  // for(int i=0; i<numArgs; i++){
+  //   solverVarsAfter[i] = argInputs[i](solverVarsAfter[solverVarsAfter.size()-1]);
+  // }
+
   solverVarsMutEx[solverVarsMutEx.size()-1] = solverVars[solverVars.size()-1];
 
   for (auto t : transitions) {
@@ -970,8 +1010,11 @@ void parseFSM(string input, string property, string output) {
       // }
     } else {
       if (t.isGuard && t.isAction) {
+        vector<expr> appliedAc;
+        copy(solverVars.begin(), solverVars.end(), back_inserter(appliedAc));
+        appliedAc = t.action(solverVars);
         expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) &&
-                t.guard(solverVars) && computeAction(solverVars, solverVarsAfter, c)
+                t.guard(solverVars) && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVarsAfter, c)
                 && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
@@ -985,8 +1028,11 @@ void parseFSM(string input, string property, string output) {
         expr imply = implies(head, tail);
         s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
       } else if (t.isAction) {
+        vector<expr> appliedAc;
+        copy(solverVars.begin(), solverVars.end(), back_inserter(appliedAc));
+        appliedAc = t.action(solverVars);
         expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data())
-                 && computeAction(solverVars, solverVarsAfter, c)
+                 && computeAction(solverVarsAfter, appliedAc, c, numArgs)
                  && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
@@ -1021,18 +1067,17 @@ void parseFSM(string input, string property, string output) {
     }
     expr stateVarMutExc = implies(state1(int(solverVars.size()), solverVars.data()) && varMutEx, 
         !state1(int(solverVarsAfter.size()), solverVarsAfter.data()));
-    s.add(nestedForall(solverVarsAll, stateVarMutExc, numArgs, numOutputs, c));    
-
+    s.add(nestedForall(solverVarsAll, stateVarMutExc, numArgs, numOutputs, c));
   }
 
 
 
-  expr r = parseLTL(property, solverVars, stateInv, stateInvFun,
-                    0, numOutputs, c);
+  // expr r = parseLTL(property, solverVars, stateInv, stateInvFun,
+                    // 0, numOutputs, c);
 
-  s.add(r);
+  // s.add(r);
 
-  printSolverAssertions(c, s, output, stateInvFun);
+  printSolverAssertions(c, s, output, stateInvFun, argInputs);
 
 }
 
