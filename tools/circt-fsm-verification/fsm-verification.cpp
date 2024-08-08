@@ -1072,10 +1072,10 @@ void parseFSM(string input, string property, string output) {
 
 
 
-  // expr r = parseLTL(property, solverVars, stateInv, stateInvFun,
-                    // 0, numOutputs, c);
+  expr r = parseLTL(property, solverVars, stateInv, stateInvFun,
+                    0, numOutputs, c);
 
-  // s.add(r);
+  s.add(r);
 
   printSolverAssertions(c, s, output, stateInvFun, argInputs);
 
