@@ -420,6 +420,9 @@ vector<int> splitTransitionForDet(vector<transition> &transitions){
       detIdx.push_back(i+1);
     }
   }
+  llvm::outs()<<"\ndet:";
+  for(auto d: detIdx)
+    llvm::outs()<<d;
   return detIdx;
 }
 
@@ -781,7 +784,7 @@ expr computeAction(vector<expr> before, vector<expr> after, context &c, int numA
       r = r && (b == a);
     id = id + 1;
   }
-  llvm::outs()<<"action: "<<r.to_string();
+  // llvm::outs()<<"action: "<<r.to_string();
 
   return r;
 }
@@ -791,7 +794,7 @@ expr computeInputs(vector<func_decl> argInputs, vector<expr> after, context &c){
   expr r = c.bool_val(true);
   int id = 0;
   for (auto a: argInputs){
-    llvm::outs()<<a.to_string();
+    // llvm::outs()<<a.to_string();
     r = r && argInputs[id](after[id], after[after.size()-1]);
     id = id + 1;
   }
