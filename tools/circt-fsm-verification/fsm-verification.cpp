@@ -412,6 +412,17 @@ int insertState(string state, vector<string> &stateInv) {
   return stateInv.size() - 1;
 }
 
+vector<int> splitTransitionForDet(vector<transition> &transitions){
+  vector<int> detIdx;
+  detIdx.push_back(0);
+  for (auto i=0; i<transitions.size()-1; i++){
+    if (transitions[i].from != transitions[i+1].from){
+      detIdx.push_back(i+1);
+    }
+  }
+  return detIdx;
+}
+
 /**
  * @brief Parse FSM states and add them to the state map
  */
@@ -776,7 +787,7 @@ expr computeAction(vector<expr> before, vector<expr> after, context &c, int numA
 }
 
 expr computeInputs(vector<func_decl> argInputs, vector<expr> after, context &c){
-  llvm::outs()<<"\noooo are numArgs: \n";
+  // llvm::outs()<<"\noooo are numArgs: \n";
   expr r = c.bool_val(true);
   int id = 0;
   for (auto a: argInputs){
@@ -784,7 +795,7 @@ expr computeInputs(vector<func_decl> argInputs, vector<expr> after, context &c){
     r = r && argInputs[id](after[id], after[after.size()-1]);
     id = id + 1;
   }
-  llvm::outs()<<"inputs: "<<r.to_string();
+  // llvm::outs()<<"inputs: "<<r.to_string();
   return r;
 }
 
@@ -1021,7 +1032,7 @@ void parseFSM(string input, string property, string output) {
         expr imply = implies(head, tail);
         s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
       } else if (t.isGuard) {
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) &&
+        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVarsAfter, c) &&
                 t.guard(solverVars) && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
@@ -1032,20 +1043,45 @@ void parseFSM(string input, string property, string output) {
         copy(solverVars.begin(), solverVars.end(), back_inserter(appliedAc));
         appliedAc = t.action(solverVars);
         expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data())
-                 && computeAction(solverVarsAfter, appliedAc, c, numArgs)
+                 && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVarsAfter, c)
                  && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
         expr imply = implies(head, tail);
         s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
       } else {
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data())
+        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVarsAfter, c)
                   && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
         expr imply = implies(head, tail);
         s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
       }
+    }
+  }
+
+  vector<int> det = splitTransitionForDet(transitions);
+
+  for(int i=0; i<det.size()-1; i++){
+    llvm::outs()<<"\nfrom transition "<<det[i]<<" to "<<det[i+1];
+    vector<z3Fun> tmpGuards;
+    for(int j=det[i]; j<det[i+1]; j++){
+      if(transitions[j].isGuard)
+        tmpGuards.push_back(transitions[j].guard);
+    }
+    auto idx = transitions[det[i]].from;
+
+    if (tmpGuards.size()>0){
+        expr neG = c.bool_val(true);
+        for(auto tmp: tmpGuards){
+          neG = neG && !tmp(solverVars);
+        }
+        expr head = stateInvFun[idx](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVarsAfter, c) &&
+                neG && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
+        expr tail = stateInvFun[idx](int(solverVarsAfter.size()),
+                              solverVarsAfter.data());
+        expr imply = implies(head, tail);
+        s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
     }
   }
 
