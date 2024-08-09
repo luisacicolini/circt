@@ -795,7 +795,7 @@ expr computeInputs(vector<func_decl> argInputs, vector<expr> after, context &c){
   int id = 0;
   for (auto a: argInputs){
     // llvm::outs()<<a.to_string();
-    r = r && argInputs[id](after[after.size()-1]);
+    r = r && argInputs[id](after[id], after[after.size()-1]);
     id = id + 1;
   }
   // llvm::outs()<<"inputs: "<<r.to_string();
@@ -896,9 +896,9 @@ void parseFSM(string input, string property, string output) {
 
   for (int i = 0; i < numArgs; i++) {
     vector<Z3_sort> domain;
-    // domain.push_back(invInput[i]);
+    domain.push_back(invInput[i]);
     domain.push_back(invInput[invInput.size() - 1]);
-    const symbol cc = c.str_symbol(("input-arg" + to_string(i)).c_str());
+    const symbol cc = c.str_symbol(("input_arg" + to_string(i)).c_str());
     Z3_func_decl I =
         Z3_mk_func_decl(c, cc, domain.size(), domain.data(), c.bool_sort());
     func_decl I2 = func_decl(c, I);

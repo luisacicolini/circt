@@ -21,11 +21,9 @@
 (declare-fun _18 (Int Int Int) Bool)
 (declare-fun _19 (Int Int Int) Bool)
 (declare-fun _20 (Int Int Int) Bool)
-(declare-fun input-arg0 (Int) Bool)
+(declare-fun input_arg0 (Int Int) Bool)
 (assert (forall ((input0 Int) (var1 Int) (time Int))
-  (! (=> (= time 0) (_0 input0 0 time)) :weight 0)))
-(assert (forall ((input0 Int) (var1 Int) (time Int))
-  (! (=> (not (input-arg0 time)) false) :weight 0)))
+  (! (=> (= time 1) (_1 input0 var1 time)) :weight 0)))
 (assert (forall ((input0 Int)
          (var1 Int)
          (time Int)
@@ -37,7 +35,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_1 input0_p var1_p time_p))
      :weight 0)))
@@ -52,7 +50,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -67,7 +65,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_2 input0_p var1_p time_p))
      :weight 0)))
@@ -82,7 +80,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -97,7 +95,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_3 input0_p var1_p time_p))
      :weight 0)))
@@ -112,7 +110,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -127,7 +125,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_4 input0_p var1_p time_p))
      :weight 0)))
@@ -142,7 +140,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -157,7 +155,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_5 input0_p var1_p time_p))
      :weight 0)))
@@ -172,7 +170,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -187,7 +185,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_6 input0_p var1_p time_p))
      :weight 0)))
@@ -202,7 +200,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -217,7 +215,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_7 input0_p var1_p time_p))
      :weight 0)))
@@ -232,7 +230,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -247,7 +245,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_8 input0_p var1_p time_p))
      :weight 0)))
@@ -262,7 +260,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -277,7 +275,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_9 input0_p var1_p time_p))
      :weight 0)))
@@ -292,7 +290,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -307,7 +305,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_10 input0_p var1_p time_p))
      :weight 0)))
@@ -322,7 +320,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -337,7 +335,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_11 input0_p var1_p time_p))
      :weight 0)))
@@ -352,7 +350,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -367,7 +365,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_12 input0_p var1_p time_p))
      :weight 0)))
@@ -382,7 +380,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -397,7 +395,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_13 input0_p var1_p time_p))
      :weight 0)))
@@ -412,7 +410,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -427,7 +425,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_14 input0_p var1_p time_p))
      :weight 0)))
@@ -442,7 +440,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -457,7 +455,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_15 input0_p var1_p time_p))
      :weight 0)))
@@ -472,7 +470,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -487,7 +485,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_16 input0_p var1_p time_p))
      :weight 0)))
@@ -502,7 +500,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -517,7 +515,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_17 input0_p var1_p time_p))
      :weight 0)))
@@ -532,7 +530,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -547,7 +545,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_18 input0_p var1_p time_p))
      :weight 0)))
@@ -562,7 +560,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -577,7 +575,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_19 input0_p var1_p time_p))
      :weight 0)))
@@ -592,7 +590,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -607,7 +605,7 @@
               true
               (= var1_p (+ var1 1))
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (_20 input0_p var1_p time_p))
      :weight 0)))
@@ -622,7 +620,7 @@
               true
               (= var1_p var1)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               (= (+ time 1) time_p))
          (ERR input0_p var1_p time_p))
      :weight 0)))
@@ -634,7 +632,7 @@
          (time_p Int))
   (! (=> (and (_0 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -649,7 +647,7 @@
          (time_p Int))
   (! (=> (and (_1 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -664,7 +662,7 @@
          (time_p Int))
   (! (=> (and (_2 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -679,7 +677,7 @@
          (time_p Int))
   (! (=> (and (_3 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -694,7 +692,7 @@
          (time_p Int))
   (! (=> (and (_4 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -709,7 +707,7 @@
          (time_p Int))
   (! (=> (and (_5 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -724,7 +722,7 @@
          (time_p Int))
   (! (=> (and (_6 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -739,7 +737,7 @@
          (time_p Int))
   (! (=> (and (_7 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -754,7 +752,7 @@
          (time_p Int))
   (! (=> (and (_8 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -769,7 +767,7 @@
          (time_p Int))
   (! (=> (and (_9 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -784,7 +782,7 @@
          (time_p Int))
   (! (=> (and (_10 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -799,7 +797,7 @@
          (time_p Int))
   (! (=> (and (_11 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -814,7 +812,7 @@
          (time_p Int))
   (! (=> (and (_12 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -829,7 +827,7 @@
          (time_p Int))
   (! (=> (and (_13 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -844,7 +842,7 @@
          (time_p Int))
   (! (=> (and (_14 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -859,7 +857,7 @@
          (time_p Int))
   (! (=> (and (_15 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -874,7 +872,7 @@
          (time_p Int))
   (! (=> (and (_16 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -889,7 +887,7 @@
          (time_p Int))
   (! (=> (and (_17 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -904,7 +902,7 @@
          (time_p Int))
   (! (=> (and (_18 input0 var1 time)
               true
-              (input-arg0 time_p)
+              (input_arg0 input0_p time_p)
               true
               (not (distinct input0 1))
               (not (= input0 1))
@@ -1836,6 +1834,7 @@
          (not (_20 input0_p var1_p time)))
      :weight 0)))
 (assert (forall ((input0 Int) (var1 Int) (time Int))
-  (! (=> (and (_1 input0 var1 time) (= var1 1)) false) :weight 0)))
+  (! (=> (and (_1 input0 var1 time) 
+          (distinct var1 1)) false) :weight 0)))
 (check-sat)
 (get-model)
