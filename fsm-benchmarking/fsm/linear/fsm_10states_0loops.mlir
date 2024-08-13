@@ -1,8 +1,6 @@
 fsm.machine @fsm10() -> () attributes {initialState = "_0"} {
 	%x0 = fsm.variable "x0" {initValue = 0 : i16} : i16
 	%c1 = hw.constant 1 : i16
-	%c11 = hw.constant 1 : i1
-
 
 
 	fsm.state @_0 output {

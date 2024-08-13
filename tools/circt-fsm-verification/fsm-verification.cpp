@@ -790,15 +790,47 @@ expr computeAction(vector<expr> before, vector<expr> after, context &c, int numA
 }
 
 expr computeInputs(vector<func_decl> argInputs, vector<expr> after, context &c){
-  // llvm::outs()<<"\noooo are numArgs: \n";
   expr r = c.bool_val(true);
-  int id = 0;
-  for (auto a: argInputs){
-    // llvm::outs()<<a.to_string();
-    r = r && argInputs[id](after[id], after[after.size()-1]);
-    id = id + 1;
+  // populate a new vector of exp according to how the input of argInputs functions was declared 
+  vector<expr> newVec;
+
+  // first arguments
+  // for(int i=0; i<argInputs.size(); i++){
+  //   if(after[i].is_bool()){
+  //     auto e1 = c.bool_const((after[i].to_string()).c_str());
+  //     newVec.push_back(e1);
+  //     auto e2 = c.bool_const((after[i].to_string()+"_p").c_str());
+  //     newVec.push_back(e2);
+  //   }else {
+  //     auto e1 = c.int_const((after[i].to_string()).c_str());
+  //     newVec.push_back(e1);
+  //     auto e2 = c.int_const((after[i].to_string()+"_p").c_str());
+  //     newVec.push_back(e2);
+  //   }
+  // }
+  // then variables 
+  for(int i=0; i<after.size(); i++){
+    if(after[i].is_bool()){
+      llvm::outs()<<"\nbool "<<after[i].to_string();
+      auto e1 = c.bool_const((after[i].to_string()).c_str());
+      newVec.push_back(e1);
+      auto e2 = c.bool_const((after[i].to_string()+"_p").c_str());
+      newVec.push_back(e2);
+    } else {
+      llvm::outs()<<"\nint "<<after[i].to_string();
+      auto e1 = c.int_const((after[i].to_string()).c_str());
+      newVec.push_back(e1);
+      auto e2 = c.int_const((after[i].to_string()+"_p").c_str());
+      newVec.push_back(e2);
+    }
   }
-  // llvm::outs()<<"inputs: "<<r.to_string();
+  llvm::outs()<<"\nnewVec has size: "<<newVec.size();
+
+  for (auto a: argInputs){
+    llvm::outs()<<"\n"<<a.to_string();
+    r = r && a(newVec.size(), newVec.data());
+    llvm::outs()<<"inputs: "<<r.to_string();
+  }
   return r;
 }
 
@@ -896,9 +928,41 @@ void parseFSM(string input, string property, string output) {
 
   for (int i = 0; i < numArgs; i++) {
     vector<Z3_sort> domain;
-    domain.push_back(invInput[i]);
-    domain.push_back(invInput[invInput.size() - 1]);
+    // arguments for skolemization
+    for(int j=0; j< variables.size(); j++){
+      llvm::outs()<<"\nvar: "<<variables[j].first.to_string();
+      if (variables[j].first.is_bool()){
+        auto e1 = c.bool_sort();
+        auto e2 = c.bool_sort();
+        domain.push_back(e1);
+        domain.push_back(e2);
+      } else {
+        auto e1 = c.int_sort();
+        auto e2 = c.int_sort();
+        domain.push_back(e1);
+        domain.push_back(e2);
+      }
+    }
+    // variables for skolemization
+    // for (int j=0; j<variables.size(); j++){
+    //   llvm::outs()<<"\nvar: "<<variables[j].first.to_string();
+    //   if (variables[j].first.is_bool()){
+    //     auto e1 = c.bool_sort();
+    //     domain.push_back(e1);
+    //   } else {
+    //     auto e1 = c.int_sort();
+    //     domain.push_back(e1);
+    //   }
+    // }
+    // time 
+    z3::sort timeInv1 = c.int_sort();
+    z3::sort timeInv2 = c.int_sort();
+    domain.push_back(timeInv1);
+    domain.push_back(timeInv2);
+
+      
     const symbol cc = c.str_symbol(("input_arg" + to_string(i)).c_str());
+    llvm::outs()<<"argInputs has domain size: "<<domain.size();
     Z3_func_decl I =
         Z3_mk_func_decl(c, cc, domain.size(), domain.data(), c.bool_sort());
     func_decl I2 = func_decl(c, I);
@@ -1028,14 +1092,14 @@ void parseFSM(string input, string property, string output) {
         copy(solverVars.begin(), solverVars.end(), back_inserter(appliedAc));
         appliedAc = t.action(solverVars);
         expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) &&
-                t.guard(solverVars) && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVarsAfter, c)
+                t.guard(solverVars) && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVars, c)
                 && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
         expr imply = implies(head, tail);
         s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
       } else if (t.isGuard) {
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVarsAfter, c) &&
+        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVars, c) &&
                 t.guard(solverVars) && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
@@ -1046,14 +1110,14 @@ void parseFSM(string input, string property, string output) {
         copy(solverVars.begin(), solverVars.end(), back_inserter(appliedAc));
         appliedAc = t.action(solverVars);
         expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data())
-                 && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVarsAfter, c)
+                 && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVars, c)
                  && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
         expr imply = implies(head, tail);
         s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
       } else {
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVarsAfter, c)
+        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVars, c)
                   && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
@@ -1079,7 +1143,7 @@ void parseFSM(string input, string property, string output) {
         for(auto tmp: tmpGuards){
           neG = neG && !tmp(solverVars);
         }
-        expr head = stateInvFun[idx](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVarsAfter, c) &&
+        expr head = stateInvFun[idx](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVars, c) &&
                 neG && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
         expr tail = stateInvFun[idx](int(solverVarsAfter.size()),
                               solverVarsAfter.data());
