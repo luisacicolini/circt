@@ -27,7 +27,7 @@
          (input0_p Int)
          (var1_p Int)
          (time_p Int))
-  (! (=> (and (>= time 0) (< time 10)) (input_arg0 0 0 var1 var1_p time time_p)) :weight 0)))
+  (! (=> (> time 0) (input_arg0 input0 input0_p var1 var1_p time time_p)) :weight 0)))
 (assert (forall ((input0 Int)
          (var1 Int)
          (time Int)
@@ -847,7 +847,15 @@
               (distinct var1 var1_p))
          (not (_10 input0_p var1_p time)))
      :weight 0)))
-(assert (forall ((input0 Int) (var1 Int) (time Int))
-  (! (=> (and (_1 input0 var1 time) (distinct var1 1)) false) :weight 0)))
+;(assert (forall ((input0 Int) (var1 Int) (time Int))
+;  (! (=> (and (_1 input0 var1 time) (distinct var1 1)) false) :weight 0)))
+
+; reachability -> works as expected with constrained inputs
+; need to relax those constraints
+;(assert (forall ((input0 Int) (var1 Int) (time Int))
+;     (=>  (and (_5 input0 var1 time) (distinct input0 1))
+;          false
+;     )))
+
 (check-sat)
 (get-model)
