@@ -854,6 +854,7 @@
               (distinct var1 var1_p))
          (not (_10 input0_p var1_p time)))
      :weight 0)))
+
 ;(assert (forall ((input0 Int) (var1 Int) (time Int))
 ;  (! (=> (and (_1 input0 var1 time) (distinct var1 1)) false) :weight 0)))
 
