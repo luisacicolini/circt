@@ -556,5 +556,25 @@
               (not (tr92 input0 var1 time))
               (not (tr1011 input0 var1 time))))
      :weight 0)))
+
+
+; reachability: sat when actually unreachable
+; the "forall" over the inputs means that we're checking that
+; a state is reached for any value of the inputs (which is 
+; usually *not* the case)
+;(assert (forall ((input0 Int) (var1 Int) (input0_p Int) (time Int))
+;  (! (=> (and (tr92 input0 var1 time) (distinct input0 0)) false)
+;     :weight 0)))
+
+; comb: sat when actually unreachable
+;(assert (forall ((input0 Int) (var1 Int) (input0_p Int) (time Int))
+;  (! (=> (tr45 input0 var1 time) (distinct var1 3))
+;     :weight 0)))
+
+; input behavior
+(assert (forall ((input0 Int) (var1 Int) (input0_p Int) (time Int))
+  (! (=> (and (tr45 input0 var1 time) (= input0_p 1))  (tr52 input0_p (+ var1 1) (+ time 1)))
+     :weight 0)))
+
 (check-sat)
 (get-model)
