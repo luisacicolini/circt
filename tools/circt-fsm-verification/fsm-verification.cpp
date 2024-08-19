@@ -11,6 +11,7 @@
 #include "mlir/Parser/Parser.h"
 #include "llvm/Support/raw_ostream.h"
 #include <iostream>
+#include <iterator>
 #include <vector>
 #include <z3++.h>
 #include <z3_api.h>
@@ -542,13 +543,22 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
 /**
  * @brief Nest SMT assertion for all variables in the variables vector
  */
-expr nestedForall(vector<expr> &solverVars, expr &body, int i,
+expr nestedForall(vector<expr> &solverVars, expr &body, int numArgs,
                   int numOutputs, z3::context &c) {
   z3::expr_vector univQ(c);
 
-  for(int idx = 0; idx < int(int(solverVars.size()))-1-numOutputs; idx++){
+  for(int idx = 0; idx < int(int(solverVars.size()))-numOutputs-1; idx++){
     univQ.push_back(solverVars[idx]);
   }
+  for (int idx = 0; idx < numArgs; idx++){
+    expr tmp = solverVars[idx];
+    if (tmp.is_bool())
+      tmp = c.bool_const((tmp.to_string()+"_p").c_str());
+    else
+      tmp = c.int_const((tmp.to_string()+"_p").c_str());
+    univQ.push_back(tmp);   
+  }
+
   univQ.push_back(solverVars[int(solverVars.size())-1]);
 
   expr ret = forall(univQ, body);
@@ -903,285 +913,99 @@ void parseFSM(string input, string property, string output) {
 
   populateST(mod, c, stateInv, transitions, vecVal, numOutputs);
 
-  // preparing the model
+  vector<func_decl> transitionActive;
 
   vector<expr> solverVars;
 
   vector<Z3_sort> invInput;
 
-  vector<func_decl> argInputs;
-
-  vector<func_decl> stateInvFun;
-
   populateInvInput(variables, c, solverVars, invInput, numArgs, numOutputs);
 
-  expr timeVar = c.int_const("time");
-  z3::sort timeInv = c.int_sort();
+  expr time = c.int_const("time");
 
-  solverVars.push_back(timeVar);
-  invInput.push_back(timeInv);
+  solverVars.push_back(time);
 
-  // generate functions for inputs
+  Z3_sort timeSort = c.int_sort();
 
-  if (V)
-    llvm::outs() << "number of args: " << numArgs << "\n\n";
+  invInput.push_back(timeSort);
 
-  for (int i = 0; i < numArgs; i++) {
-    vector<Z3_sort> domain;
-    // arguments for skolemization
-    for(int j=0; j< variables.size(); j++){
-      llvm::outs()<<"\nvar: "<<variables[j].first.to_string();
-      if (variables[j].first.is_bool()){
-        auto e1 = c.bool_sort();
-        auto e2 = c.bool_sort();
-        domain.push_back(e1);
-        domain.push_back(e2);
-      } else {
-        auto e1 = c.int_sort();
-        auto e2 = c.int_sort();
-        domain.push_back(e1);
-        domain.push_back(e2);
-      }
-    }
-    // variables for skolemization
-    // for (int j=0; j<variables.size(); j++){
-    //   llvm::outs()<<"\nvar: "<<variables[j].first.to_string();
-    //   if (variables[j].first.is_bool()){
-    //     auto e1 = c.bool_sort();
-    //     domain.push_back(e1);
-    //   } else {
-    //     auto e1 = c.int_sort();
-    //     domain.push_back(e1);
-    //   }
-    // }
-    // time 
-    z3::sort timeInv1 = c.int_sort();
-    z3::sort timeInv2 = c.int_sort();
-    domain.push_back(timeInv1);
-    domain.push_back(timeInv2);
+  // create uninterpreted function vec -> bool for each transition
 
-      
-    const symbol cc = c.str_symbol(("input_arg" + to_string(i)).c_str());
-    llvm::outs()<<"argInputs has domain size: "<<domain.size();
-    Z3_func_decl I =
-        Z3_mk_func_decl(c, cc, domain.size(), domain.data(), c.bool_sort());
+  for (auto t: transitions){
+    const symbol cc = c.str_symbol(("tr"+to_string(t.from)+to_string(t.to)).c_str());
+    Z3_func_decl I = Z3_mk_func_decl(c, cc, invInput.size(), invInput.data(), c.bool_sort());
     func_decl I2 = func_decl(c, I);
-    argInputs.push_back(I2);
+    transitionActive.push_back(I2);
   }
-
-  populateStateInvMap(stateInv, c, invInput, stateInvFun);
-
-  if (V) {
-    llvm::outs() << "number of variables + args: " << int(solverVars.size()) << "\n";
-    for (auto v : solverVars) {
-      llvm::outs() << "variable: " << v.to_string() << "\n";
-    }
-  }
-
-  int j = 0;
-
-  vector<expr> solverVarsInit;
-  copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsInit));
-
-  for(int i=numArgs; i<int(variables.size()); i++){
-
-    // if (i<numArgs){
-    //   if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
-    //     solverVarsInit[i] = c.int_val(0);
-    //   } else {
-    //     solverVarsInit.at(i) = c.bool_val(false);
-    //   }
-    // } else{
-    if (variables[i].second.getType().getIntOrFloatBitWidth() > 1) {
-      // int initValue =
-      // stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("__")+1));
-      solverVarsInit[i] = c.int_val(initValues[i-numArgs]);
-    } else {
-      // bool initValue = stoi(variables[i].first.to_string().substr(variables[i].first.to_string().find("__")+1));
-      solverVarsInit.at(i) = c.bool_val(initValues[i-numArgs]);
-    }
-    // }
-
-
-  }
-  // for (int i = 0; i < numArgs; i++) {
-  //   solverVarsInit[i] = argInputs[i](0);
-  // }
-  if (V) {
-    for (auto sv : solverVarsInit) {
-      llvm::outs() << "\nsvI[i]: " << sv.to_string();
-    }
-    llvm::outs() << "\n\n";
-  }
-
-  if(V)
-    printTransitions(transitions);
-
-  expr initState =
-      (stateInvFun[0](int(solverVarsInit.size()), solverVarsInit.data()));
-  expr body =
-      implies((solverVarsInit[int(solverVarsInit.size()) - 1] == 0),
-              initState);
 
   // initial condition
-  s.add(nestedForall(solverVars, body, 0, numOutputs, c));
-  vector<expr> solverVarsAfter;
-  vector<expr> solverVarsAll;
-  vector<expr> solverVarsMutEx;
 
-  copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
-  copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAll));
-  copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsMutEx));
-
-  for (int i = 0; i < (int(solverVars.size())); i++) {
-    expr tmp(c);
-    if(solverVars[i].is_bool()){
-      tmp = c.bool_const((solverVars[i].to_string()+"_p").c_str());
-    } else {
-      tmp = c.int_const((solverVars[i].to_string()+"_p").c_str());
-    }
-    solverVarsAfter[i] = tmp;
-    solverVarsMutEx[i] = tmp;
-    solverVarsAll.push_back(tmp);
-  }
-
-  // for(int i=0; i<numArgs; i++){
-  //   solverVarsAfter[i] = argInputs[i](solverVarsAfter[solverVarsAfter.size()-1]);
-  // }
-
-  solverVarsMutEx[solverVarsMutEx.size()-1] = solverVars[solverVars.size()-1];
-
-  for (auto t : transitions) {
-
-    if(V)
-      llvm::outs()<<"\nfrom "<<t.from<<" to "<<t.to;
-
-    if (t.isOutput) {
-      // if (t.isGuard && t.isAction) {
-      //   expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) &&
-      //           t.guard(solverVars) && 
-      //   expr body = implies(
-      //       (stateInvFun[t.from](int(solverVars.size()), solverVars.data())) &&
-      //           t.guard(solverVars),
-      //       stateInvFun[t.to](t.output(t.action(solverVarsAfter)).size(),
-      //                         t.output(t.action(solverVarsAfter)).data()));
-      //   s.add(nestedForall(solverVars, body, 0, numOutputs, c));
-      // } else if (t.isGuard) {
-      //   expr body = implies(
-      //       (stateInvFun[t.from](int(solverVars.size()), solverVars.data()) &&
-      //        t.guard(solverVars)),
-      //       stateInvFun[t.to](t.output((solverVarsAfter)).size(),
-      //                         t.output((solverVarsAfter)).data()));
-      //   s.add(nestedForall(solverVars, body, 0, numOutputs, c));
-      // } else if (t.isAction) {
-      //   expr body = implies(
-      //       stateInvFun[t.from](int(solverVars.size()), solverVars.data()),
-      //       stateInvFun[t.to](t.output(t.action(solverVarsAfter)).size(),
-      //                         t.output(t.action(solverVarsAfter)).data()));
-      //   s.add(nestedForall(solverVars, body, 0, numOutputs, c));
-      // } else {
-      //   expr body =
-      //       implies((stateInvFun[t.from](int(solverVars.size()), solverVars.data())),
-      //               stateInvFun[t.to](t.output(solverVarsAfter).size(),
-      //                                 t.output(solverVarsAfter).data()));
-      //   s.add(nestedForall(solverVars, body, 0, numOutputs, c));
-      // }
-    } else {
-      if (t.isGuard && t.isAction) {
-        vector<expr> appliedAc;
-        copy(solverVars.begin(), solverVars.end(), back_inserter(appliedAc));
-        appliedAc = t.action(solverVars);
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) &&
-                t.guard(solverVars) && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVars, c)
-                && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
-        expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
-                              solverVarsAfter.data());
-        expr imply = implies(head, tail);
-        s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
-      } else if (t.isGuard) {
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVars, c) &&
-                t.guard(solverVars) && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
-        expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
-                              solverVarsAfter.data());
-        expr imply = implies(head, tail);
-        s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
-      } else if (t.isAction) {
-        vector<expr> appliedAc;
-        copy(solverVars.begin(), solverVars.end(), back_inserter(appliedAc));
-        appliedAc = t.action(solverVars);
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data())
-                 && computeAction(solverVarsAfter, appliedAc, c, numArgs) && computeInputs(argInputs, solverVars, c)
-                 && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
-        expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
-                              solverVarsAfter.data());
-        expr imply = implies(head, tail);
-        s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
-      } else {
-        expr head = stateInvFun[t.from](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVars, c)
-                  && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
-        expr tail = stateInvFun[t.to](int(solverVarsAfter.size()),
-                              solverVarsAfter.data());
-        expr imply = implies(head, tail);
-        s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
-      }
+  expr tail = solverVars[solverVars.size()-1]==0;
+  expr xorEx = c.bool_val(false);
+  for(auto [idx, t]: llvm::enumerate(transitions)){
+    if (t.from == 0){
+      xorEx = xorEx ^ transitionActive[idx](solverVars.size(), solverVars.data());
     }
   }
+  expr body = implies(tail, xorEx);
+  s.add(nestedForall(solverVars, body, numArgs, numOutputs, c));
 
-  vector<int> det = splitTransitionForDet(transitions);
+  // traverse all transitions and build implications from one to the other 
 
-  for(int i=0; i<det.size()-1; i++){
-    llvm::outs()<<"\nfrom transition "<<det[i]<<" to "<<det[i+1];
-    vector<z3Fun> tmpGuards;
-    for(int j=det[i]; j<det[i+1]; j++){
-      if(transitions[j].isGuard)
-        tmpGuards.push_back(transitions[j].guard);
-    }
-    auto idx = transitions[det[i]].from;
-
-    if (tmpGuards.size()>0){
-        expr neG = c.bool_val(true);
-        for(auto tmp: tmpGuards){
-          neG = neG && !tmp(solverVars);
+  for(auto [idx1, t1]: llvm::enumerate(transitions)){
+    for(auto [idx2, t2]: llvm::enumerate(transitions)){
+      if(t1.to == t2.from && idx1 != idx2 ){
+        // build implication here (tail = lhs, head = rhs)
+        vector<expr> solverVarsAfter;
+        copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
+        
+        if (t1.isAction)
+          solverVarsAfter = t1.action(solverVars);
+        for (int k=0;k<numArgs; k++){
+          if (solverVarsAfter[k].is_bool())
+            solverVarsAfter[k] = c.bool_const((solverVarsAfter[k].to_string()+"_p").c_str());
+          else
+            solverVarsAfter[k] = c.int_const((solverVarsAfter[k].to_string()+"_p").c_str());
         }
-        expr head = stateInvFun[idx](int(solverVars.size()), solverVars.data()) && computeInputs(argInputs, solverVars, c) &&
-                neG && (solverVars[int(solverVars.size())-1]+1==solverVarsAfter[int(solverVarsAfter.size())-1]);
-        expr tail = stateInvFun[idx](int(solverVarsAfter.size()),
-                              solverVarsAfter.data());
-        expr imply = implies(head, tail);
-        s.add(nestedForall(solverVarsAll, imply, 0, numOutputs, c));
-    }
-  }
+        solverVarsAfter[solverVarsAfter.size()-1]= solverVarsAfter[solverVarsAfter.size()-1] + 1;
+        expr guard1 = c.bool_val(true);
+        expr guard2 = c.bool_val(true);
 
-  solverVarsAfter[solverVarsAfter.size()-1] = solverVars[solverVars.size()-1];
+        if(t1.isGuard)
+          guard1 = t1.guard(solverVars);
+        if(t2.isGuard && t1.isAction)
+          guard2 = t2.guard(solverVarsAfter);
 
-  for(auto state1 : stateInvFun){
-    expr mutualExc = c.bool_val(true);
-    for(auto state2: stateInvFun){
-      if(state1.to_string() != state2.to_string()){
-        mutualExc = mutualExc && !state2(int(solverVarsAfter.size()), solverVarsAfter.data());
+        for(auto aa: solverVarsAfter)
+          llvm::outs()<<aa.to_string()<<"\n";
+        expr tail = transitionActive[idx1](solverVars.size(), solverVars.data()) && guard1 && guard2;
+        expr head = transitionActive[idx2](solverVarsAfter.size(), solverVarsAfter.data());
+        expr body = implies(tail, head);
+        expr imp = nestedForall(solverVars, body, numArgs, numOutputs, c);
+        // expr tail = transitionActive[idx1](solverVars.size(), solverVars.data()) && guard1 && guard2;
+        // expr head = transitionActive[idx1](solverVarsAfter.size(), solverVarsAfter.data());
+        // expr body = implies(tail, head);
+        // expr imp = nestedForall(solverVars, body, numArgs, numOutputs, c);
+        s.add(imp);
       }
     }
-    expr stateMutualExc = implies(state1(int(solverVars.size()), solverVars.data()), mutualExc);
-    s.add(nestedForall(solverVarsAll, stateMutualExc, numArgs, numOutputs, c));    
-    expr varMutEx = c.bool_val(true);
-    for(auto [a,b]: llvm::zip(solverVars, solverVarsAfter)){
-      if (a.to_string()!="time")
-        varMutEx = varMutEx && a!=b;
+  }
+  vector<func_decl> argInputs;
+  // mutual exclusion 
+
+  for (auto [idx1, t1]: llvm::enumerate(transitions)){
+    expr tail = transitionActive[idx1](solverVars.size(), solverVars.data());
+    expr head = c.bool_val(true);
+    for(auto [idx2, t2]: llvm::enumerate(transitions)){
+      if (idx1!=idx2)
+        head = head && (!transitionActive[idx2](solverVars.size(), solverVars.data()));
     }
-    expr stateVarMutExc = implies(state1(int(solverVars.size()), solverVars.data()) && varMutEx, 
-        !state1(int(solverVarsAfter.size()), solverVarsAfter.data()));
-    s.add(nestedForall(solverVarsAll, stateVarMutExc, numArgs, numOutputs, c));
+    expr body = implies(tail, head);
+    // do not change the 0 here 
+    s.add(nestedForall(solverVars, body, 0, numOutputs, c));
   }
 
-
-
-  expr r = parseLTL(property, solverVars, stateInv, stateInvFun,
-                    0, numOutputs, c);
-
-  s.add(r);
-
-  printSolverAssertions(c, s, output, stateInvFun, argInputs);
-
+  printSolverAssertions(c, s, output, transitionActive, argInputs);
 }
 
 int main(int argc, char **argv) {
