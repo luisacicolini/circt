@@ -617,8 +617,8 @@ void populateInvInput(vector<std::pair<expr, mlir::Value>> &variables,
  * @brief Parse LTL dialect file expressing property
  */
 expr parseLTL(string inputFile, vector<expr> &solverVars,
-              vector<string> &stateInv, 
-              vector<func_decl> &stateInvFun, int numArgs, int numOutputs,
+              vector<string> &stateInv, vector<transition> transitions,
+              vector<func_decl> &transitionActive, int numArgs, int numOutputs,
               context &c) {
   DialectRegistry registry;
 
@@ -640,24 +640,15 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
           if (attrDict.size() == 1) {
             // reachability
             auto a0 = (attrDict[0].getValue());
-            string state;
-            raw_string_ostream os1(state);
-            a0.print(os1);
-            os1.flush();
-            state = state.substr(1, state.size() - 2);
-
-            if (V)
-              llvm::outs()<<"\n\n\nTesting reachability of state "<<state;
-
-            // for (int i = 0; i < int(argInputs.size()); i++) {
-            //   solverVars[i] = argInputs[i](solverVars[int(solverVars.size()) - 1]);
-            // }
-
-            expr body = implies(stateInvFun.at(insertState(state, stateInv))(
+            string var;
+            raw_string_ostream os0(var);
+            a0.print(os0);
+            os0.flush();
+            var = var.substr(1, var.size() - 2);
+            int id = stoi(var);
+            expr body = implies(transitionActive.at(id)(
                 int(solverVars.size()), solverVars.data()), false);
-
             expr ret = nestedForall(solverVars, body, numArgs, numOutputs, c);
-
             return ret;
           } else {
             llvm::outs() << "Reachability Property can not be parsed.";
@@ -672,6 +663,7 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             a0.print(os1);
             os1.flush();
             state = state.substr(1, state.size() - 2);
+            int stateId = stoi(state);
 
             auto a1 = (attrDict[1].getValue());
             string var;
@@ -690,19 +682,14 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             int v = stoi(val);
 
             if(V)
-              llvm::outs()<<"\n\n\nTesting value "<<v<<" of variable at index "<<id<<" at state "<<state;
+              llvm::outs()<<"\n\n\nTesting value "<<v<<" of variable at index "<<id<<" at transition "<<stateId;
 
-            // for (int i = 0; i < int(argInputs.size()); i++) {
-            //   solverVars[i] = argInputs[i](solverVars[int(solverVars.size()) - 1]);
-            // }
-
-            expr b1 = implies((stateInvFun[insertState(state, stateInv)](
-                            int(solverVars.size()), solverVars.data())) &&
-                        (solverVars[v] != id), false);
+            expr b1 = implies((transitionActive[stateId](
+                            int(solverVars.size()), solverVars.data())),
+                        (solverVars[v] != id));
 
 
             expr r1 = nestedForall(solverVars, b1, numArgs, numOutputs, c);
-
 
 
 
@@ -712,7 +699,7 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
           }
         } else if (auto impl = dyn_cast<ltl::ImplicationOp>(op)) {
           auto attrDict = impl.getOperation()->getAttrs();
-          if (attrDict.size() == 3) {
+          if (attrDict.size() == 4) {
             // error
             auto a3 = (attrDict[2].getValue());
             string state;
@@ -720,6 +707,7 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             a3.print(os0);
             os0.flush();
             state = state.substr(1, state.size() - 2);
+            int stateId = stoi(state);
 
             llvm::outs()<<"\n\nstate: "<<state;
 
@@ -742,36 +730,33 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             int input = stoi(var);
             llvm::outs()<<"\n\ninput: "<<input;
 
-
-            // for (int i = 0; i < int(argInputs.size()); i++) {
-            //   solverVars[i] = argInputs[i](solverVars[int(solverVars.size()) - 1]);
-            // }
+            auto a2 = (attrDict[0].getValue());
+            string next;
+            raw_string_ostream os3(var);
+            a2.print(os3);
+            os3.flush();
+            var = var.substr(1, var.size() - 2);
+            int nextId = stoi(var);
 
             vector<expr> solverVarsAfter;
+            copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
+            
+            if (transitions[stateId].isAction)
+              solverVarsAfter = transitions[stateId].action(solverVars);
+            for (int k=0;k<numArgs; k++){
+              if (solverVarsAfter[k].is_bool())
+                solverVarsAfter[k] = c.bool_const((solverVarsAfter[k].to_string()+"_p").c_str());
+              else
+                solverVarsAfter[k] = c.int_const((solverVarsAfter[k].to_string()+"_p").c_str());
+            }
+            solverVarsAfter[solverVarsAfter.size()-1]= solverVarsAfter[solverVarsAfter.size()-1] + 1;
 
-            copy(solverVars.begin(), solverVars.end(),
-                 back_inserter(solverVarsAfter));
-
-            solverVarsAfter[int(solverVarsAfter.size()) - 1] =
-                solverVarsAfter[int(solverVarsAfter.size()) - 1] + 1;
-            // for (int i = 0; i < int(argInputs.size()); i++) {
-            //   solverVarsAfter[i] =
-            //       argInputs[i](solverVarsAfter[int(solverVarsAfter.size()) - 1]);
-            // }
-
-            expr body = implies((solverVars[signal]==input) && !(stateInvFun[insertState(state, stateInv)])(int(solverVarsAfter.size()), solverVarsAfter.data()), false);
+            expr body = implies((solverVars[signal]==input) && (transitionActive[stateId])(int(solverVarsAfter.size()), solverVarsAfter.data()), 
+              (transitionActive[nextId])(int(solverVarsAfter.size()), solverVarsAfter.data())
+              );
 
             llvm::outs()<<body.to_string()<<"\n\n";
 
-            // expr body = !(stateInvFun[insertState(state,
-            // stateInv)])(int(solverVarsAfter.size()), solverVarsAfter.data()); expr
-            // ret = (forall(solverVars[int(solverVars.size())-1],
-            // implies((solverVars[int(solverVars.size())-1]>0 &&
-            // solverVars[int(solverVars.size())-1]<time-1 &&
-            // (solverVars[signal]==input) && (stateInvFun[insertState(state,
-            // stateInv)])(int(solverVars.size()), solverVars.data())),
-            // nestedForall(solverVars, body, numArgs, numOutputs)))); return
-            // ret;
 
             return nestedForall(solverVars, body, numArgs, numOutputs, c);
 
@@ -988,7 +973,7 @@ void parseFSM(string input, string property, string output) {
     }
   }
 
-    // create uninterpreted function vec -> bool for each transition
+  // create uninterpreted function vec -> bool for each transition
 
   for (auto t: transitions){
     const symbol cc = c.str_symbol(("tr"+to_string(t.from)+to_string(t.to)).c_str());
@@ -1044,10 +1029,6 @@ void parseFSM(string input, string property, string output) {
         expr head = transitionActive[idx2](solverVarsAfter.size(), solverVarsAfter.data());
         expr body = implies(tail, head);
         expr imp = nestedForall(solverVars, body, numArgs, numOutputs, c);
-        // expr tail = transitionActive[idx1](solverVars.size(), solverVars.data()) && guard1 && guard2;
-        // expr head = transitionActive[idx1](solverVarsAfter.size(), solverVarsAfter.data());
-        // expr body = implies(tail, head);
-        // expr imp = nestedForall(solverVars, body, numArgs, numOutputs, c);
         s.add(imp);
       }
     }
@@ -1066,6 +1047,9 @@ void parseFSM(string input, string property, string output) {
     // do not change the 0 here 
     s.add(nestedForall(solverVars, body, 0, numOutputs, c));
   }
+
+  auto r = parseLTL(property, solverVars, stateInv, transitions, transitionActive, numArgs, numOutputs, c);
+  s.add(r);
 
   printSolverAssertions(c, s, output, transitionActive, argInputs);
 }
