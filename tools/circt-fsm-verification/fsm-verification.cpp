@@ -62,6 +62,8 @@ void printSolverAssertions(z3::context &c, z3::solver &solver, string output,
     outfile << "(assert " << Z3_ast_to_string(c, ast) << ")" << std::endl;
   }
   outfile << "(check-sat)" << std::endl;
+  outfile << "(get-model)" << std::endl;
+
 
   outfile.close();
 }
@@ -72,7 +74,8 @@ void printSolverAssertions(z3::context &c, z3::solver &solver, string output,
 void printTransitions(vector<transition> &transitions) {
   llvm::outs() << "\nPRINTING TRANSITIONS\n";
   for (auto t : transitions) {
-    llvm::outs() << "\ntransition from " << t.from << " to " << t.to << "\n";
+    llvm::outs() << "\ntransition from " << t.from << " to " << t.to;
+
   }
 }
 
@@ -402,13 +405,12 @@ void populateVars(Operation &mod, vector<mlir::Value> &vecVal,
  * @brief Insert state if not present, return position in vector otherwise
  */
 int insertState(string state, vector<string> &stateInv) {
-  int i = 0;
-  for (auto s : stateInv) {
+  for (auto [i,s] : llvm::enumerate(stateInv)) {
     // return index
     if (s == state)
       return i;
-    i++;
   }
+  llvm::outs()<<"\ninserting "<<state<<" at "<<stateInv.size();
   stateInv.push_back(state);
   return stateInv.size() - 1;
 }
@@ -443,7 +445,6 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
               for (Operation &op : block) {
                 if (auto state = dyn_cast<fsm::StateOp>(op)) {
                   string currentState = state.getName().str();
-                  insertState(currentState, stateInv);
                   numState++;
                   if (V) {
                     llvm::outs() << "inserting state " << currentState << "\n";
@@ -862,6 +863,7 @@ expr computeOutput(vector<expr> before, vector<expr> after, context &c){
   return r;
 }
 
+
 /**
  * @brief Parse FSM and build SMT model
  */
@@ -893,11 +895,20 @@ void parseFSM(string input, string property, string output) {
 
   vector<transition> transitions;
 
+  insertState("fake", stateInv);
+
   string initialState = getInitialState(mod);
 
   // initial state is by default associated with id 0
 
   insertState(initialState, stateInv);
+
+  transition fake;
+  fake.from = insertState("fake", stateInv);
+  fake.to = insertState(initialState, stateInv);
+  fake.isAction = false;
+  fake.isGuard = false; 
+  transitions.push_back(fake);
 
   if (V) {
     llvm::outs() << "initial state: " << initialState << "\n";
@@ -929,7 +940,55 @@ void parseFSM(string input, string property, string output) {
 
   invInput.push_back(timeSort);
 
-  // create uninterpreted function vec -> bool for each transition
+
+
+  // initialize variables' values
+
+  vector<expr> solverVarsInit;
+  copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsInit));
+  for (auto [idx, iv]: llvm::enumerate(initValues)){
+      if(solverVarsInit[numArgs+idx].is_bool())
+        solverVarsInit[numArgs + idx] = c.bool_val(iv);
+      else 
+        solverVarsInit[numArgs + idx] = c.int_val(iv);
+  }
+
+  // enforce self-loops if none of the guards is respected
+  vector<int> visited;
+
+  for(auto [idx1, t1]: llvm::enumerate(transitions)){
+    bool found = false;
+    for (auto v: visited)
+      if (t1.from == v)
+        found = true;
+    if (t1.isGuard && !found){
+      visited.push_back(t1.from);
+      vector<z3Fun> tmpGuards;
+      tmpGuards.push_back(t1.guard);  
+      for(auto [idx2, t2]: llvm::enumerate(transitions)){
+        if(idx1!=idx2 && t1.from == t2.from && t2.isGuard)
+          tmpGuards.push_back(t2.guard);
+      }
+
+      z3Fun tmpG = [tmpGuards, &c](const vector<expr>& vec) {
+        expr neg = c.bool_val(true);
+        for(const auto& tmp: tmpGuards){
+          neg = neg && !tmp(vec);
+        }
+        return neg;
+      };
+      transition t;
+      t.from = t1.from;
+      t.to = t1.from;
+      t.isGuard = true;
+      t.guard = tmpG;
+      t.isAction = false;
+      t.isOutput = false;
+      transitions.push_back(t);
+    }
+  }
+
+    // create uninterpreted function vec -> bool for each transition
 
   for (auto t: transitions){
     const symbol cc = c.str_symbol(("tr"+to_string(t.from)+to_string(t.to)).c_str());
@@ -938,23 +997,21 @@ void parseFSM(string input, string property, string output) {
     transitionActive.push_back(I2);
   }
 
-  // initial condition
+  // initial condition (fake transition with no action nor guards)
 
-  expr tail = solverVars[solverVars.size()-1]==0;
-  expr xorEx = c.bool_val(false);
-  for(auto [idx, t]: llvm::enumerate(transitions)){
-    if (t.from == 0){
-      xorEx = xorEx ^ transitionActive[idx](solverVars.size(), solverVars.data());
-    }
-  }
-  expr body = implies(tail, xorEx);
+  expr tail = solverVars[solverVars.size()-1]==-1;
+  expr head = transitionActive[0](solverVarsInit.size(), solverVarsInit.data());
+  expr body = implies(tail, head);
   s.add(nestedForall(solverVars, body, numArgs, numOutputs, c));
 
   // traverse all transitions and build implications from one to the other 
 
+  printTransitions(transitions);
+
   for(auto [idx1, t1]: llvm::enumerate(transitions)){
     for(auto [idx2, t2]: llvm::enumerate(transitions)){
-      if(t1.to == t2.from && idx1 != idx2 ){
+      if(t1.to == t2.from && idx1 != idx2){
+        llvm::outs()<<"\nfrom "<<t1.to;
         // build implication here (tail = lhs, head = rhs)
         vector<expr> solverVarsAfter;
         copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
@@ -973,8 +1030,13 @@ void parseFSM(string input, string property, string output) {
 
         if(t1.isGuard)
           guard1 = t1.guard(solverVars);
-        if(t2.isGuard && t1.isAction)
+        if(t2.isGuard)
           guard2 = t2.guard(solverVarsAfter);
+
+
+        llvm::outs()<<"\nguard1: "<<guard1.to_string();
+        llvm::outs()<<"\nguard2: "<<guard2.to_string();
+
 
         for(auto aa: solverVarsAfter)
           llvm::outs()<<aa.to_string()<<"\n";
