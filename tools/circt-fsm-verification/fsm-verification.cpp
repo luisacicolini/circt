@@ -1,6 +1,4 @@
-#include "chrono"
 #include "circt/Dialect/Comb/CombOps.h"
-#include "circt/Dialect/FSM/FSMGraph.h"
 #include "circt/Dialect/FSM/FSMOps.h"
 #include "circt/Dialect/LTL/LTLDialect.h"
 #include "circt/Dialect/LTL/LTLOps.h"
@@ -28,7 +26,7 @@ using z3Fun = std::function<expr(vector<expr>)>;
 
 using z3FunA = std::function<vector<expr>(vector<expr>)>;
 
-struct transition {
+struct Transition {
   int from, to;
   z3Fun guard;
   bool isGuard, isAction, isOutput;
@@ -38,7 +36,7 @@ struct transition {
 /**
  * @brief Prints solver assertions
 */
-void printSolverAssertions(z3::context &c, z3::solver &solver, string output,
+void printSolverAssertions(z3::context &c, z3::solver &solver, const string& output,
                            vector<func_decl> &stateInvFun, vector<func_decl> &argInputs) {
 
   ofstream outfile;
@@ -50,11 +48,11 @@ void printSolverAssertions(z3::context &c, z3::solver &solver, string output,
 
   llvm::outs() << "assertions size: " << assertions.size() << "\n\n";
 
-  for (auto fd : stateInvFun) {
+  for (const auto& fd : stateInvFun) {
     outfile << fd.to_string() << "\n";
   }
 
-  for (auto fd : argInputs) {
+  for (const auto& fd : argInputs) {
     outfile << fd.to_string() << "\n";
   }
   for (unsigned i = 0; i < assertions.size(); ++i) {
@@ -71,11 +69,10 @@ void printSolverAssertions(z3::context &c, z3::solver &solver, string output,
 /**
  * @brief Prints FSM transition
 */
-void printTransitions(vector<transition> &transitions) {
+void printTransitions(vector<Transition> &transitions) {
   llvm::outs() << "\nPRINTING TRANSITIONS\n";
-  for (auto t : transitions) {
+  for (const auto& t : transitions) {
     llvm::outs() << "\ntransition from " << t.from << " to " << t.to;
-
   }
 }
 
@@ -85,7 +82,7 @@ void printTransitions(vector<transition> &transitions) {
 */
 void printExprValMap(vector<std::pair<expr, mlir::Value>> &exprMap) {
   llvm::outs() << "\n\nEXPR-VAL:";
-  for (auto e : exprMap) {
+  for (const auto& e : exprMap) {
     llvm::outs() << "\n\nexpr: " << e.first.to_string()
                  << ", value: " << e.second;
   }
@@ -106,19 +103,7 @@ string getInitialState(Operation &mod) {
     }
   }
   llvm::errs() << "Initial state does not exist\n";
-}
-
-/**
- * @brief Returns list of values to be updated within an action region
- */
-vector<mlir::Value> actionsCounter(Region &action) {
-  vector<mlir::Value> toUpdate;
-  for (auto &op : action.getOps()) {
-    if (auto updateop = dyn_cast<fsm::UpdateOp>(op)) {
-      toUpdate.push_back(updateop.getOperands()[0]);
-    }
-  }
-  return toUpdate;
+  return "err";
 }
 
 /**
@@ -128,15 +113,15 @@ expr manageCombExp(Operation &op, vector<expr> &vec, z3::context &c) {
 
   if (auto add = dyn_cast<comb::AddOp>(op)) {
     return to_expr(c, vec[0] + vec[1]);
-  } else if (auto and_op = dyn_cast<comb::AndOp>(op)) {
+  } if (auto andOp = dyn_cast<comb::AndOp>(op)) {
     return expr(vec[0] && vec[1]);
-  } else if (auto xor_op = dyn_cast<comb::XorOp>(op)) {
+  } if (auto xorOp = dyn_cast<comb::XorOp>(op)) {
     return expr(vec[0] ^ vec[1]);
-  } else if (auto or_op = dyn_cast<comb::OrOp>(op)) {
+  } if (auto orOp = dyn_cast<comb::OrOp>(op)) {
     return expr(vec[0] | vec[1]);
-  } else if (auto mul_op = dyn_cast<comb::MulOp>(op)) {
+  } if (auto mulOp = dyn_cast<comb::MulOp>(op)) {
     return expr(vec[0] * vec[1]);
-  } else if (auto icmp = dyn_cast<comb::ICmpOp>(op)) {
+  } if (auto icmp = dyn_cast<comb::ICmpOp>(op)) {
     circt::comb::ICmpPredicate predicate = icmp.getPredicate();
     switch (predicate) {
     case circt::comb::ICmpPredicate::eq:
@@ -178,7 +163,7 @@ expr manageCombExp(Operation &op, vector<expr> &vec, z3::context &c) {
 expr getExpr(mlir::Value v, vector<std::pair<expr, mlir::Value>> &exprMap,
              z3::context &c) {
 
-  for (auto e : exprMap) {
+  for (const auto& e : exprMap) {
     if (e.second == v)
       return e.first;
   }
@@ -186,10 +171,10 @@ expr getExpr(mlir::Value v, vector<std::pair<expr, mlir::Value>> &exprMap,
   if (auto constop = dyn_cast<hw::ConstantOp>(v.getDefiningOp())) {
     if (constop.getType().getIntOrFloatBitWidth() > 1)
       return c.int_val(constop.getValue().getSExtValue());
-    else
-      return c.bool_val(0);
+          return c.bool_val(0);
   }
   llvm::errs() << "Expression not found.";
+  return c.bool_val(false);
 }
 
 /**
@@ -200,7 +185,7 @@ expr getGuardExpr(vector<std::pair<expr, mlir::Value>> &exprMap, Region &guard,
 
   for (auto &op : guard.getOps()) {
     if (auto retop = dyn_cast<fsm::ReturnOp>(op)) {
-      for (auto e : exprMap) {
+      for (const auto& e : exprMap) {
         if (e.second == retop.getOperand()) {
 
           return e.first;
@@ -215,33 +200,6 @@ expr getGuardExpr(vector<std::pair<expr, mlir::Value>> &exprMap, Region &guard,
     exprMap.push_back({manageCombExp(op, vec, c), op.getResult(0)});
   }
   return expr(c.bool_const("true"));
-}
-
-/**
- * @brief Returns output expression for input region
- */
-vector<expr> getOutputExpr(vector<std::pair<expr, mlir::Value>> &exprMap,
-                           Region &guard, z3::context &c) {
-  vector<expr> outputExp;
-  // printExprValMap(exprMap);
-  for (auto &op : guard.getOps()) {
-    if (auto outop = dyn_cast<fsm::OutputOp>(op)) {
-      for (auto opr : outop.getOperands()) {
-        for (auto e : exprMap) {
-          if (e.second == opr) {
-            llvm::outs() << "\npushing " << e.second;
-            outputExp.push_back(e.first);
-          }
-        }
-      }
-      return outputExp;
-    }
-    vector<expr> vec;
-    for (auto operand : op.getOperands()) {
-      vec.push_back(getExpr(operand, exprMap, c));
-    }
-    exprMap.push_back({manageCombExp(op, vec, c), op.getResult(0)});
-  }
 }
 
 /**
@@ -275,7 +233,7 @@ vector<expr> getActionExpr(Region &action, context &c,
       }
     }
     if (!found) {
-      for (auto e : exprMap) {
+      for (const auto& e : exprMap) {
         if (e.second == v){
           updatedVec.push_back(e.first);
         }
@@ -319,46 +277,6 @@ int populateArgs(Operation &mod, vector<mlir::Value> &vecVal,
 }
 
 /**
- * @brief Parse FSM output and add them to the variable map
- */
-int populateOutputs(Operation &mod, vector<mlir::Value> &vecVal,
-                    vector<std::pair<expr, mlir::Value>> &variables,
-                    z3::context &c, MLIRContext &context,
-                    OwningOpRef<ModuleOp> &module) {
-  int numOutput = 0;
-  for (Region &rg : mod.getRegions()) {
-    for (Block &bl : rg) {
-      for (Operation &op : bl) {
-        if (auto machine = dyn_cast<fsm::MachineOp>(op)) {
-          for (auto opr : machine.getFunctionType().getResults()) {
-            expr e = c.bool_const(("output_" + to_string(numOutput)).c_str());
-            if (opr.getIntOrFloatBitWidth() > 1) {
-              e = c.int_const(("output_" + to_string(numOutput)).c_str());
-            }
-            // is this conceptually correct?
-            OpBuilder builder(&machine.getBody());
-
-            auto loc = builder.getUnknownLoc();
-
-            auto variable = builder.create<fsm::VariableOp>(
-                loc, builder.getIntegerType(opr.getIntOrFloatBitWidth()),
-                IntegerAttr::get(
-                    builder.getIntegerType(opr.getIntOrFloatBitWidth()), 0),
-                builder.getStringAttr("outputVal"));
-
-            mlir::Value v = variable.getResult();
-
-            vecVal.push_back(v);
-            variables.push_back({e, v});
-          }
-        }
-      }
-    }
-  }
-  return numOutput;
-}
-
-/**
  * @brief Parse FSM variables and add them to the variable map
  */
 void populateVars(Operation &mod, vector<mlir::Value> &vecVal,
@@ -373,8 +291,7 @@ void populateVars(Operation &mod, vector<mlir::Value> &vecVal,
               for (Operation &op : block) {
                 if (auto varOp = dyn_cast<fsm::VariableOp>(op)) {
                   vecVal.push_back(varOp.getResult());
-                  int initValue =
-                      varOp.getInitValue().cast<IntegerAttr>().getInt();
+                  int initValue = mlir::cast<IntegerAttr>(varOp.getInitValue()).getInt();
                   string varName = varOp.getName().str();
                   initValues.push_back(initValue);
                   if (varOp.getName().str().find("arg") != std::string::npos) {
@@ -404,36 +321,48 @@ void populateVars(Operation &mod, vector<mlir::Value> &vecVal,
 /**
  * @brief Insert state if not present, return position in vector otherwise
  */
-int insertState(string state, vector<string> &stateInv) {
+int insertState(const string& state, vector<string> &stateInv) {
   for (auto [i,s] : llvm::enumerate(stateInv)) {
-    // return index
+    // return index if present already
     if (s == state)
       return i;
   }
-  llvm::outs()<<"\ninserting "<<state<<" at "<<stateInv.size();
   stateInv.push_back(state);
   return stateInv.size() - 1;
 }
 
-vector<int> splitTransitionForDet(vector<transition> &transitions){
-  vector<int> detIdx;
-  detIdx.push_back(0);
-  for (auto i=0; i<transitions.size()-1; i++){
-    if (transitions[i].from != transitions[i+1].from){
-      detIdx.push_back(i+1);
+/**
+ * @brief Returns output expression for input region
+ */
+vector<expr> getOutputExpr(vector<std::pair<expr, mlir::Value>> &exprMap,
+                           Region &guard, z3::context &c) {
+  vector<expr> outputExp;
+  // printExprValMap(exprMap);
+  for (auto &op : guard.getOps()) {
+    if (auto outop = dyn_cast<fsm::OutputOp>(op)) {
+      for (auto opr : outop.getOperands()) {
+        for (const auto& e : exprMap) {
+          if (e.second == opr) {
+            outputExp.push_back(e.first);
+          }
+        }
+      }
+      return outputExp;
     }
+    vector<expr> vec;
+    for (auto operand : op.getOperands()) {
+      vec.push_back(getExpr(operand, exprMap, c));
+    }
+    exprMap.push_back({manageCombExp(op, vec, c), op.getResult(0)});
   }
-  llvm::outs()<<"\ndet:";
-  for(auto d: detIdx)
-    llvm::outs()<<d;
-  return detIdx;
+  return outputExp;
 }
 
 /**
  * @brief Parse FSM states and add them to the state map
  */
 void populateST(Operation &mod, context &c, vector<string> &stateInv,
-                vector<transition> &transitions, vector<mlir::Value> &vecVal,
+                vector<Transition> &transitions, vector<mlir::Value> &vecVal,
                 int numOutput) {
   for (Region &rg : mod.getRegions()) {
     for (Block &bl : rg) {
@@ -441,11 +370,9 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
         if (auto machine = dyn_cast<fsm::MachineOp>(op)) {
           for (Region &rg : op.getRegions()) {
             for (Block &block : rg) {
-              int numState = 0;
               for (Operation &op : block) {
                 if (auto state = dyn_cast<fsm::StateOp>(op)) {
                   string currentState = state.getName().str();
-                  numState++;
                   if (V) {
                     llvm::outs() << "inserting state " << currentState << "\n";
                   }
@@ -457,7 +384,7 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                   for (Block &bl1 : *regions[1]) {
                     for (Operation &op : bl1.getOperations()) {
                       if (auto transop = dyn_cast<fsm::TransitionOp>(op)) {
-                        transition t;
+                        Transition t;
                         t.from = insertState(currentState, stateInv);
                         t.to =
                             insertState(transop.getNextState().str(), stateInv);
@@ -499,9 +426,7 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                           t.action = a;
                           t.isAction = true;
                         } else {
-                            Region &r = *trRegions[1];
-                            z3FunA a = [&r, &vecVal,
-                                      &c](vector<expr> vec) -> vector<expr> {
+                            z3FunA a = [](vector<expr> vec) -> vector<expr> {
                             return vec;
                           };
                           t.action = a;
@@ -509,7 +434,7 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                         }
                         if (existsOutput) {
                           Region &r2 = *regions[0];
-                          z3FunA tf = [&r2, &numOutput, &vecVal,
+                          z3FunA tf = [&r2, &vecVal,
                                        &c](vector<expr> vec) -> vector<expr> {
                             vector<std::pair<expr, mlir::Value>> tmpOut;
                             for (auto [value, expr] : llvm::zip(vecVal, vec)) {
@@ -517,7 +442,7 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                             }
                             vector<expr> outputExpr =
                                 getOutputExpr(tmpOut, r2, c);
-                            for (int j = 0; j < outputExpr.size(); j++) {
+                            for (int j = 0; j < int(outputExpr.size()); j++) {
                               vec[vec.size() - 1 - outputExpr.size() + j] =
                                   outputExpr[j];
                             }
@@ -551,6 +476,7 @@ expr nestedForall(vector<expr> &solverVars, expr &body, int numArgs,
   for(int idx = 0; idx < int(int(solverVars.size()))-numOutputs-1; idx++){
     univQ.push_back(solverVars[idx]);
   }
+  // quantify next input if present
   for (int idx = 0; idx < numArgs; idx++){
     expr tmp = solverVars[idx];
     if (tmp.is_bool())
@@ -567,20 +493,6 @@ expr nestedForall(vector<expr> &solverVars, expr &body, int numArgs,
   return ret;
 }
 
-/**
- * @brief Build Z3 boolean function for each state in the state map
- */
-void populateStateInvMap(vector<string> &stateInv, context &c,
-                         vector<Z3_sort> &invInput,
-                         vector<func_decl> &stateInvFun) {
-  for (auto s : stateInv) {
-    const symbol cc = c.str_symbol(s.c_str());
-    Z3_func_decl I =
-        Z3_mk_func_decl(c, cc, invInput.size(), invInput.data(), c.bool_sort());
-    func_decl I2 = func_decl(c, I);
-    stateInvFun.push_back(I2);
-  }
-}
 
 /**
  * @brief Build Z3 sort for each input argument
@@ -591,11 +503,11 @@ void populateInvInput(vector<std::pair<expr, mlir::Value>> &variables,
 
   int i = 0;
 
-  for (auto e : variables) {
+  for (const auto& e : variables) {
     string name = "var";
     if (numArgs != 0 && i < numArgs) {
       name = "input";
-    } else if (numOutputs != 0 && i >= variables.size() - numOutputs) {
+    } else if (numOutputs != 0 && i >= int(variables.size()) - numOutputs) {
       name = "output";
     }
     expr input = c.bool_const((name + to_string(i)).c_str());
@@ -616,8 +528,8 @@ void populateInvInput(vector<std::pair<expr, mlir::Value>> &variables,
 /**
  * @brief Parse LTL dialect file expressing property
  */
-expr parseLTL(string inputFile, vector<expr> &solverVars,
-              vector<string> &stateInv, vector<transition> transitions,
+expr parseLTL(const string& inputFile, vector<expr> &solverVars,
+              vector<string> &stateInv, vector<Transition> transitions,
               vector<func_decl> &transitionActive, int numArgs, int numOutputs,
               context &c) {
   DialectRegistry registry;
@@ -650,9 +562,8 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
                 int(solverVars.size()), solverVars.data()), false);
             expr ret = nestedForall(solverVars, body, numArgs, numOutputs, c);
             return ret;
-          } else {
-            llvm::outs() << "Reachability Property can not be parsed.";
           }
+          llvm::outs() << "Reachability Property can not be parsed.";
         } else if (auto rep = dyn_cast<ltl::NotOp>(op)) {
           auto attrDict = rep.getOperation()->getAttrs();
           if (attrDict.size() == 3) {
@@ -684,19 +595,18 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             if(V)
               llvm::outs()<<"\n\n\nTesting value "<<v<<" of variable at index "<<id<<" at transition "<<stateId;
 
-            expr b1 = implies((transitionActive[stateId](
+            expr body = implies((transitionActive[stateId](
                             int(solverVars.size()), solverVars.data())),
                         (solverVars[v] != id));
 
 
-            expr r1 = nestedForall(solverVars, b1, numArgs, numOutputs, c);
+            expr r = nestedForall(solverVars, body, numArgs, numOutputs, c);
 
 
 
-            return (r1);
-          } else {
-            llvm::outs() << "Comb Property can not be parsed.";
-          }
+            return (r);
+          } 
+          llvm::outs() << "Comb Property can not be parsed.";
         } else if (auto impl = dyn_cast<ltl::ImplicationOp>(op)) {
           auto attrDict = impl.getOperation()->getAttrs();
           if (attrDict.size() == 4) {
@@ -709,7 +619,6 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             state = state.substr(1, state.size() - 2);
             int stateId = stoi(state);
 
-            llvm::outs()<<"\n\nstate: "<<state;
 
             auto a0 = (attrDict[1].getValue());
             string sig;
@@ -718,8 +627,6 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             os1.flush();
             sig = sig.substr(1, sig.size() - 2);
             int signal = stoi(sig);
-            llvm::outs()<<"\n\nsignal: "<<signal;
-
 
             auto a1 = (attrDict[0].getValue());
             string var;
@@ -728,7 +635,6 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
             os2.flush();
             var = var.substr(1, var.size() - 2);
             int input = stoi(var);
-            llvm::outs()<<"\n\ninput: "<<input;
 
             auto a2 = (attrDict[0].getValue());
             string next;
@@ -760,9 +666,9 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
 
             return nestedForall(solverVars, body, numArgs, numOutputs, c);
 
-          } else {
-            llvm::outs() << "Error Management Property can not be parsed.";
           }
+          llvm::outs() << "Error Management Property can not be parsed.";
+          
         }
       }
     }
@@ -771,88 +677,50 @@ expr parseLTL(string inputFile, vector<expr> &solverVars,
   return c.bool_val(true);
 }
 
-expr computeAction(vector<expr> before, vector<expr> after, context &c, int numArgs){
-  llvm::outs()<<"\nthere are numArgs: "<<numArgs;
-  expr r = c.bool_val(true);
-  int id = 0;
-  for (auto [b, a]: llvm::zip(before, after)){
-    if (b.to_string()!="time_p" && id>=numArgs)
-      r = r && (b == a);
-    id = id + 1;
-  }
-  // llvm::outs()<<"action: "<<r.to_string();
+/**
+ * @brief Parse FSM output and add them to the variable map
+ */
+int populateOutputs(Operation &mod, vector<mlir::Value> &vecVal,
+                    vector<std::pair<expr, mlir::Value>> &variables,
+                    z3::context &c, MLIRContext &context,
+                    OwningOpRef<ModuleOp> &module) {
+  int numOutput = 0;
+  for (Region &rg : mod.getRegions()) {
+    for (Block &bl : rg) {
+      for (Operation &op : bl) {
+        if (auto machine = dyn_cast<fsm::MachineOp>(op)) {
+          for (auto opr : machine.getFunctionType().getResults()) {
+            expr e = c.bool_const(("output_" + to_string(numOutput)).c_str());
+            if (opr.getIntOrFloatBitWidth() > 1) {
+              e = c.int_const(("output_" + to_string(numOutput)).c_str());
+            }
+            // is this conceptually correct?
+            OpBuilder builder(&machine.getBody());
 
-  return r;
-}
+            auto loc = builder.getUnknownLoc();
 
-expr computeInputs(vector<func_decl> argInputs, vector<expr> after, context &c){
-  expr r = c.bool_val(true);
-  // populate a new vector of exp according to how the input of argInputs functions was declared 
-  vector<expr> newVec;
+            auto variable = builder.create<fsm::VariableOp>(
+                loc, builder.getIntegerType(opr.getIntOrFloatBitWidth()),
+                IntegerAttr::get(
+                    builder.getIntegerType(opr.getIntOrFloatBitWidth()), 0),
+                builder.getStringAttr("outputVal"));
 
-  // first arguments
-  // for(int i=0; i<argInputs.size(); i++){
-  //   if(after[i].is_bool()){
-  //     auto e1 = c.bool_const((after[i].to_string()).c_str());
-  //     newVec.push_back(e1);
-  //     auto e2 = c.bool_const((after[i].to_string()+"_p").c_str());
-  //     newVec.push_back(e2);
-  //   }else {
-  //     auto e1 = c.int_const((after[i].to_string()).c_str());
-  //     newVec.push_back(e1);
-  //     auto e2 = c.int_const((after[i].to_string()+"_p").c_str());
-  //     newVec.push_back(e2);
-  //   }
-  // }
-  // then variables 
-  for(int i=0; i<after.size(); i++){
-    if(after[i].is_bool()){
-      llvm::outs()<<"\nbool "<<after[i].to_string();
-      auto e1 = c.bool_const((after[i].to_string()).c_str());
-      newVec.push_back(e1);
-      auto e2 = c.bool_const((after[i].to_string()+"_p").c_str());
-      newVec.push_back(e2);
-    } else {
-      llvm::outs()<<"\nint "<<after[i].to_string();
-      auto e1 = c.int_const((after[i].to_string()).c_str());
-      newVec.push_back(e1);
-      auto e2 = c.int_const((after[i].to_string()+"_p").c_str());
-      newVec.push_back(e2);
+            mlir::Value v = variable.getResult();
+
+            vecVal.push_back(v);
+            variables.push_back({e, v});
+          }
+        }
+      }
     }
   }
-  llvm::outs()<<"\nnewVec has size: "<<newVec.size();
-
-  for (auto a: argInputs){
-    llvm::outs()<<"\n"<<a.to_string();
-    r = r && a(newVec.size(), newVec.data());
-    llvm::outs()<<"inputs: "<<r.to_string();
-  }
-  return r;
+  return numOutput;
 }
-
-// expr mutualExc(vector<expr> before, vector<expr> after, context &c){
-//   expr r = c.bool_val(true);
-//   for (auto [b, a]: llvm::zip(before, after)){
-//     if (b.to_string()!="time")
-//       r = r && (b == a);
-//   }
-//   return r;
-// }
-
-expr computeOutput(vector<expr> before, vector<expr> after, context &c){
-  expr r = c.bool_val(true);
-  for (auto [b, a]: llvm::zip(before, after)){
-    if (b.to_string()!="time")
-      r = r && (b == a);
-  }
-  return r;
-}
-
 
 /**
  * @brief Parse FSM and build SMT model
  */
-void parseFSM(string input, string property, string output) {
+void parseFSM(const string& input, const string& property, const string& output) {
 
   DialectRegistry registry;
 
@@ -878,7 +746,7 @@ void parseFSM(string input, string property, string output) {
 
   vector<mlir::Value> vecVal;
 
-  vector<transition> transitions;
+  vector<Transition> transitions;
 
   insertState("fake", stateInv);
 
@@ -888,7 +756,7 @@ void parseFSM(string input, string property, string output) {
 
   insertState(initialState, stateInv);
 
-  transition fake;
+  Transition fake;
   fake.from = insertState("fake", stateInv);
   fake.to = insertState(initialState, stateInv);
   fake.isAction = false;
@@ -906,6 +774,7 @@ void parseFSM(string input, string property, string output) {
   populateVars(mod, vecVal, variables, c, numArgs, initValues);
 
   int numOutputs = populateOutputs(mod, vecVal, variables, c, context, module);
+
 
   populateST(mod, c, stateInv, transitions, vecVal, numOutputs);
 
@@ -962,7 +831,7 @@ void parseFSM(string input, string property, string output) {
         }
         return neg;
       };
-      transition t;
+      Transition t;
       t.from = t1.from;
       t.to = t1.from;
       t.isGuard = true;
@@ -975,11 +844,11 @@ void parseFSM(string input, string property, string output) {
 
   // create uninterpreted function vec -> bool for each transition
 
-  for (auto t: transitions){
+  for (const auto& t: transitions){
     const symbol cc = c.str_symbol(("tr"+to_string(t.from)+to_string(t.to)).c_str());
-    Z3_func_decl I = Z3_mk_func_decl(c, cc, invInput.size(), invInput.data(), c.bool_sort());
-    func_decl I2 = func_decl(c, I);
-    transitionActive.push_back(I2);
+    Z3_func_decl inv = Z3_mk_func_decl(c, cc, invInput.size(), invInput.data(), c.bool_sort());
+    func_decl inv2 = func_decl(c, inv);
+    transitionActive.push_back(inv2);
   }
 
   // initial condition (fake transition with no action nor guards)
@@ -991,12 +860,9 @@ void parseFSM(string input, string property, string output) {
 
   // traverse all transitions and build implications from one to the other 
 
-  printTransitions(transitions);
-
   for(auto [idx1, t1]: llvm::enumerate(transitions)){
     for(auto [idx2, t2]: llvm::enumerate(transitions)){
       if(t1.to == t2.from && idx1 != idx2){
-        llvm::outs()<<"\nfrom "<<t1.to;
         // build implication here (tail = lhs, head = rhs)
         vector<expr> solverVarsAfter;
         copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
@@ -1019,12 +885,6 @@ void parseFSM(string input, string property, string output) {
           guard2 = t2.guard(solverVarsAfter);
 
 
-        llvm::outs()<<"\nguard1: "<<guard1.to_string();
-        llvm::outs()<<"\nguard2: "<<guard2.to_string();
-
-
-        for(auto aa: solverVarsAfter)
-          llvm::outs()<<aa.to_string()<<"\n";
         expr tail = transitionActive[idx1](solverVars.size(), solverVars.data()) && guard1 && guard2;
         expr head = transitionActive[idx2](solverVarsAfter.size(), solverVarsAfter.data());
         expr body = implies(tail, head);

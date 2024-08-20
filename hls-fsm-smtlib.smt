@@ -1410,7 +1410,5 @@
               (not (tr99 input0 var1 time))
               (not (tr1010 input0 var1 time))))
      :weight 0)))
-(assert (forall ((input0 Int) (var1 Int) (input0_p Int) (time Int))
-  (! (=> (tr67 input0 var1 time) (distinct var1 4)) :weight 0)))
 (check-sat)
 (get-model)
