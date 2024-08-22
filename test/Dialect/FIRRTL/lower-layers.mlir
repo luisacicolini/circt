@@ -201,6 +201,29 @@ firrtl.circuit "Test" {
     }
   }
 
+  // Test that subfield, subindex, and subaccess are moved out of layerblocks to
+  // avoid capturing non-passive types.
+  //
+  // CHECK:      firrtl.module private @[[SubOpsInLayerBlock_A:[A-Za-z0-9_]+]]
+  // CHECK-SAME:   in %[[port:[A-Za-z0-9_]+]]: !firrtl.uint<1>
+  // CHECK-NEXT:   firrtl.node %[[port]]
+  // CHECK-NEXT: }
+  // CHECK:      firrtl.module @SubOpsInLayerBlock
+  // CHECK-NEXT:   firrtl.subaccess
+  // CHECK-NEXT:   firrtl.subindex
+  // CHECK-NEXT:   firrtl.subfield
+  firrtl.module @SubOpsInLayerBlock(
+    in %a: !firrtl.vector<vector<bundle<a: uint<1>, b flip: uint<2>>, 2>, 2>,
+    in %b: !firrtl.uint<1>
+  ) {
+    firrtl.layerblock @A {
+      %0 = firrtl.subaccess %a[%b] : !firrtl.vector<vector<bundle<a: uint<1>, b flip: uint<2>>, 2>, 2>, !firrtl.uint<1>
+      %1 = firrtl.subindex %0[0] : !firrtl.vector<bundle<a: uint<1>, b flip: uint<2>>, 2>
+      %2 = firrtl.subfield %1[a] : !firrtl.bundle<a: uint<1>, b flip: uint<2>>
+      %3 = firrtl.node %2 : !firrtl.uint<1>
+    }
+  }
+
   //===--------------------------------------------------------------------===//
   // Connecting/Defining Refs
   //===--------------------------------------------------------------------===//
@@ -694,3 +717,53 @@ firrtl.circuit "Foo" attributes {
 //
 // CHECK:       sv.verbatim
 // CHECK-SAME:    #hw.output_file<"testbench{{/|\\\\}}layers_Foo_A.sv", excludeFromFileList>
+
+
+// -----
+// Check that we correctly implement the verilog header and footer for B.
+
+firrtl.circuit "Foo" {
+  firrtl.layer @A bind {
+    firrtl.layer @X bind {}
+  }
+  firrtl.layer @B bind {}
+  firrtl.module @Foo() {}
+}
+
+// CHECK: firrtl.circuit "Foo" {
+// CHECK:   sv.verbatim "`ifndef layers_Foo_B\0A`define layers_Foo_B" {output_file = #hw.output_file<"layers_Foo_B.sv", excludeFromFileList>}
+// CHECK:   firrtl.module @Foo() {
+// CHECK:   }
+// CHECK:   sv.verbatim "`endif // layers_Foo_B" {output_file = #hw.output_file<"layers_Foo_B.sv", excludeFromFileList>}
+// CHECK: }
+
+// -----
+
+// Check rwprobe ops are updated.
+// CHECK-LABEL: circuit "RWTH"
+firrtl.circuit "RWTH" {
+  firrtl.layer @T  bind { }
+  firrtl.module @RWTH() attributes {convention = #firrtl<convention scalarized>, layers = [@T]} {
+    %d_p = firrtl.instance d @DUT(out p: !firrtl.rwprobe<uint<1>, @T>)
+    %one = firrtl.constant 1 : !firrtl.uint<1>
+    firrtl.ref.force_initial %one, %d_p, %one: !firrtl.uint<1>, !firrtl.rwprobe<uint<1>, @T>, !firrtl.uint<1>
+  }
+//      CHECK:    firrtl.module private @DUT_T(out %p: !firrtl.rwprobe<uint<1>>) {
+// CHECK-NEXT:      %w = firrtl.wire sym @[[SYM:.+]] : !firrtl.uint<1>
+// CHECK-NEXT:      %0 = firrtl.ref.rwprobe <@DUT_T::@[[SYM]]> : !firrtl.rwprobe<uint<1>>
+// CHECK-NEXT:      firrtl.ref.define %p, %0 : !firrtl.rwprobe<uint<1>>
+// CHECK-NEXT:    }
+// CHECK-NEXT:    firrtl.module @DUT(out %p: !firrtl.rwprobe<uint<1>>) attributes {convention = #firrtl<convention scalarized>} {
+// CHECK-NEXT:      %t_p = firrtl.instance t sym @t {lowerToBind, output_file = #hw.output_file<"layers_RWTH_T.sv", excludeFromFileList>} @DUT_T(out p: !firrtl.rwprobe<uint<1>>)
+// CHECK-NEXT:      firrtl.ref.define %p, %t_p : !firrtl.rwprobe<uint<1>>
+// CHECK-NEXT:    }
+
+  firrtl.module @DUT(out %p: !firrtl.rwprobe<uint<1>, @T>) attributes {convention = #firrtl<convention scalarized>} {
+    firrtl.layerblock @T {
+      %w = firrtl.wire sym @sym : !firrtl.uint<1>
+      %0 = firrtl.ref.rwprobe <@DUT::@sym> : !firrtl.rwprobe<uint<1>>
+      %1 = firrtl.ref.cast %0 : (!firrtl.rwprobe<uint<1>>) -> !firrtl.rwprobe<uint<1>, @T>
+      firrtl.ref.define %p, %1 : !firrtl.rwprobe<uint<1>, @T>
+    }
+  }
+}
