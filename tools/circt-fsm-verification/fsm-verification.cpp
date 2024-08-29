@@ -14,7 +14,7 @@
 #include <z3++.h>
 #include <z3_api.h>
 
-#define V 0
+#define V 1
 
 using namespace llvm;
 using namespace mlir;
@@ -210,6 +210,8 @@ vector<expr> getActionExpr(Region &action, context &c,
                            vector<std::pair<expr, mlir::Value>> &exprMap) {
   vector<expr> updatedVec;
   for (auto v : toUpdate) {
+    if(V)
+       llvm::outs()<<"\nlooking for updates of "<<v;
     bool found = false;
     for (auto &op : action.getOps()) {
       if (!found) {
@@ -228,7 +230,7 @@ vector<expr> getActionExpr(Region &action, context &c,
             vec.push_back(getExpr(operand, exprMap, c));
           }
 
-          exprMap.push_back({manageCombExp(op, vec, c), op.getResult(0)});
+          exprMap.emplace_back(manageCombExp(op, vec, c), op.getResult(0));
         }
       }
     }
@@ -413,13 +415,18 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                           Region &r = *trRegions[1];
                           z3FunA a = [&r, &vecVal,
                                       &c](vector<expr> vec) -> vector<expr> {
-                            expr time = vec[vec.size() - 1];
+                            expr time = vec.back();
+                            llvm::outs()<<"\ninside the action";
                             vector<std::pair<expr, mlir::Value>> tmpVar;
-                            for (auto [value, expr] : llvm::zip(vecVal, vec)) {
-                              tmpVar.push_back({expr, value});
+                            // problem: need to remove arguments from vecval
+                            vector<mlir::Value> vecValNoArgs; 
+                            copy(vecVal.begin()+(vecVal.size()-vec.size())+1, vecVal.end(), back_inserter(vecValNoArgs));
+                            for (auto [value, expr] : llvm::zip(vecValNoArgs, vec)) {
+                              llvm::outs()<<"\naction inserting "<<expr.to_string();
+                              tmpVar.emplace_back(expr, value);
                             }
                             vector<expr> vec2 =
-                                getActionExpr(r, c, vecVal, tmpVar);
+                                getActionExpr(r, c, vecValNoArgs, tmpVar);
                             vec2.push_back(time);
                             return vec2;
                           };
@@ -438,7 +445,7 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                                        &c](vector<expr> vec) -> vector<expr> {
                             vector<std::pair<expr, mlir::Value>> tmpOut;
                             for (auto [value, expr] : llvm::zip(vecVal, vec)) {
-                              tmpOut.push_back({expr, value});
+                              tmpOut.emplace_back(expr, value);
                             }
                             vector<expr> outputExpr =
                                 getOutputExpr(tmpOut, r2, c);
@@ -473,20 +480,10 @@ expr nestedForall(vector<expr> &solverVars, expr &body, int numArgs,
                   int numOutputs, z3::context &c) {
   z3::expr_vector univQ(c);
 
-  for(int idx = 0; idx < int(int(solverVars.size()))-numOutputs-1; idx++){
-    univQ.push_back(solverVars[idx]);
+  for(const auto& sv: solverVars){
+    llvm::outs()<<"\nuniv. quant. over "<<sv.to_string();
+    univQ.push_back(sv);
   }
-  // quantify next input if present
-  for (int idx = 0; idx < numArgs; idx++){
-    expr tmp = solverVars[idx];
-    if (tmp.is_bool())
-      tmp = c.bool_const((tmp.to_string()+"_p").c_str());
-    else
-      tmp = c.int_const((tmp.to_string()+"_p").c_str());
-    univQ.push_back(tmp);   
-  }
-
-  univQ.push_back(solverVars[int(solverVars.size())-1]);
 
   expr ret = forall(univQ, body);
 
@@ -495,19 +492,42 @@ expr nestedForall(vector<expr> &solverVars, expr &body, int numArgs,
 
 
 /**
- * @brief Build Z3 sort for each input argument
+ * @brief Build Z3 sort and expr vectors for the arguments of state functions
  */
-void populateInvInput(vector<std::pair<expr, mlir::Value>> &variables,
+void populateStateArgs(vector<std::pair<expr, mlir::Value>> &variables,
                       context &c, vector<expr> &solverVars,
                       vector<Z3_sort> &invInput, int numArgs, int numOutputs) {
 
-  int i = 0;
 
-  for (const auto& e : variables) {
+  for (auto [i, e] : llvm::enumerate(variables)) {
+    if (int(i) >= numArgs){
+      string name = "var";
+      expr input = c.bool_const((name + to_string(i)).c_str());
+      z3::sort invIn = c.bool_sort();
+      if (e.second.getType().getIntOrFloatBitWidth() > 1) {
+        input = c.int_const((name + to_string(i)).c_str());
+        invIn = c.int_sort();
+      }
+      solverVars.push_back(input);
+      if (V) {
+        llvm::outs() << "solverVars now: " << solverVars[i-numArgs].to_string() << "\n";
+      }
+      invInput.push_back(invIn);
+    }
+  }
+}
+
+/**
+ * @brief Build Z3 sort and expr vectors for the arguments of guards functions
+ */
+void populateGuardArgs(vector<std::pair<expr, mlir::Value>> &variables,
+                      context &c, vector<expr> &solverVars,
+                      vector<Z3_sort> &invInput, int numArgs, int numOutputs) {
+  for (auto [i, e] : llvm::enumerate(variables)) {
     string name = "var";
-    if (numArgs != 0 && i < numArgs) {
+    if (numArgs != 0 && int(i) < numArgs) {
       name = "input";
-    } else if (numOutputs != 0 && i >= int(variables.size()) - numOutputs) {
+    } else if (numOutputs != 0 && int(i) >= int(variables.size()) - numOutputs) {
       name = "output";
     }
     expr input = c.bool_const((name + to_string(i)).c_str());
@@ -520,7 +540,6 @@ void populateInvInput(vector<std::pair<expr, mlir::Value>> &variables,
     if (V) {
       llvm::outs() << "solverVars now: " << solverVars[i].to_string() << "\n";
     }
-    i++;
     invInput.push_back(invIn);
   }
 }
@@ -530,7 +549,7 @@ void populateInvInput(vector<std::pair<expr, mlir::Value>> &variables,
  */
 expr parseLTL(const string& inputFile, vector<expr> &solverVars,
               vector<string> &stateInv, vector<Transition> transitions,
-              vector<func_decl> &transitionActive, int numArgs, int numOutputs,
+              vector<func_decl> &statesActive, int numArgs, int numOutputs,
               context &c) {
   DialectRegistry registry;
 
@@ -557,8 +576,8 @@ expr parseLTL(const string& inputFile, vector<expr> &solverVars,
             a0.print(os0);
             os0.flush();
             var = var.substr(1, var.size() - 2);
-            int id = stoi(var);
-            expr body = implies(transitionActive.at(id)(
+            int id = stoi(var)-1;
+            expr body = implies(statesActive.at(id)(
                 int(solverVars.size()), solverVars.data()), false);
             expr ret = nestedForall(solverVars, body, numArgs, numOutputs, c);
             return ret;
@@ -574,7 +593,7 @@ expr parseLTL(const string& inputFile, vector<expr> &solverVars,
             a0.print(os1);
             os1.flush();
             state = state.substr(1, state.size() - 2);
-            int stateId = stoi(state);
+            int stateId = stoi(state)-1;
 
             auto a1 = (attrDict[1].getValue());
             string var;
@@ -595,7 +614,7 @@ expr parseLTL(const string& inputFile, vector<expr> &solverVars,
             if(V)
               llvm::outs()<<"\n\n\nTesting value "<<v<<" of variable at index "<<id<<" at transition "<<stateId;
 
-            expr body = implies((transitionActive[stateId](
+            expr body = implies((statesActive[stateId](
                             int(solverVars.size()), solverVars.data())),
                         (solverVars[v] != id));
 
@@ -649,16 +668,11 @@ expr parseLTL(const string& inputFile, vector<expr> &solverVars,
             
             if (transitions[stateId].isAction)
               solverVarsAfter = transitions[stateId].action(solverVars);
-            for (int k=0;k<numArgs; k++){
-              if (solverVarsAfter[k].is_bool())
-                solverVarsAfter[k] = c.bool_const((solverVarsAfter[k].to_string()+"_p").c_str());
-              else
-                solverVarsAfter[k] = c.int_const((solverVarsAfter[k].to_string()+"_p").c_str());
-            }
-            solverVarsAfter[solverVarsAfter.size()-1]= solverVarsAfter[solverVarsAfter.size()-1] + 1;
 
-            expr body = implies((solverVars[signal]==input) && (transitionActive[stateId])(int(solverVarsAfter.size()), solverVarsAfter.data()), 
-              (transitionActive[nextId])(int(solverVarsAfter.size()), solverVarsAfter.data())
+            solverVarsAfter.back()= solverVarsAfter.back() + 1;
+
+            expr body = implies((solverVars[signal]==input) && (statesActive[stateId])(int(solverVars.size()), solverVars.data()), 
+              (statesActive[nextId])(int(solverVarsAfter.size()), solverVarsAfter.data())
               );
 
             llvm::outs()<<body.to_string()<<"\n\n";
@@ -748,7 +762,7 @@ void parseFSM(const string& input, const string& property, const string& output)
 
   vector<Transition> transitions;
 
-  insertState("fake", stateInv);
+  insertState("supp", stateInv);
 
   string initialState = getInitialState(mod);
 
@@ -757,7 +771,7 @@ void parseFSM(const string& input, const string& property, const string& output)
   insertState(initialState, stateInv);
 
   Transition fake;
-  fake.from = insertState("fake", stateInv);
+  fake.from = insertState("supp", stateInv);
   fake.to = insertState(initialState, stateInv);
   fake.isAction = false;
   fake.isGuard = false; 
@@ -778,33 +792,42 @@ void parseFSM(const string& input, const string& property, const string& output)
 
   populateST(mod, c, stateInv, transitions, vecVal, numOutputs);
 
-  vector<func_decl> transitionActive;
+  vector<func_decl> statesActive;
 
-  vector<expr> solverVars;
+  vector<expr> stateArgs;
 
-  vector<Z3_sort> invInput;
+  vector<Z3_sort> stateArgsSort;
 
-  populateInvInput(variables, c, solverVars, invInput, numArgs, numOutputs);
+  vector<expr> guardArgs;
+
+  vector<Z3_sort> guardArgsSort;
+
+  populateStateArgs(variables, c, stateArgs, stateArgsSort, numArgs, numOutputs);
+
+
+  populateGuardArgs(variables, c, guardArgs, guardArgsSort, numArgs, numOutputs);
 
   expr time = c.int_const("time");
 
-  solverVars.push_back(time);
+  stateArgs.push_back(time);
 
   Z3_sort timeSort = c.int_sort();
 
-  invInput.push_back(timeSort);
-
-
+  stateArgsSort.push_back(timeSort);
 
   // initialize variables' values
 
-  vector<expr> solverVarsInit;
-  copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsInit));
+  vector<expr> stateArgsInit;
+
+  vector<expr> guardArgsInit;
+
+  copy(stateArgs.begin(), stateArgs.end(), back_inserter(stateArgsInit));
+
   for (auto [idx, iv]: llvm::enumerate(initValues)){
-      if(solverVarsInit[numArgs+idx].is_bool())
-        solverVarsInit[numArgs + idx] = c.bool_val(iv);
-      else 
-        solverVarsInit[numArgs + idx] = c.int_val(iv);
+    if(stateArgsInit[idx].is_bool())
+      stateArgsInit[idx] = c.bool_val(iv);
+    else 
+      stateArgsInit[idx] = c.int_val(iv);
   }
 
   // enforce self-loops if none of the guards is respected
@@ -844,74 +867,90 @@ void parseFSM(const string& input, const string& property, const string& output)
 
   // create uninterpreted function vec -> bool for each transition
 
-  for (const auto& t: transitions){
-    const symbol cc = c.str_symbol(("tr"+to_string(t.from)+to_string(t.to)).c_str());
-    Z3_func_decl inv = Z3_mk_func_decl(c, cc, invInput.size(), invInput.data(), c.bool_sort());
+  for (const auto& s: stateInv){
+    const symbol cc = c.str_symbol((s).c_str());
+    Z3_func_decl inv = Z3_mk_func_decl(c, cc, stateArgs.size(), stateArgsSort.data(), c.bool_sort());
     func_decl inv2 = func_decl(c, inv);
-    transitionActive.push_back(inv2);
+    statesActive.push_back(inv2);
   }
 
   // initial condition (fake transition with no action nor guards)
 
-  expr tail = solverVars[solverVars.size()-1]==-1;
-  expr head = transitionActive[0](solverVarsInit.size(), solverVarsInit.data());
+  expr tail = stateArgs.back()==-1;
+  expr head = statesActive[0](stateArgsInit.size(), stateArgsInit.data());
   expr body = implies(tail, head);
-  s.add(nestedForall(solverVars, body, numArgs, numOutputs, c));
+  s.add(nestedForall(stateArgs, body, numArgs, numOutputs, c));
 
   // traverse all transitions and build implications from one to the other 
 
   for(auto [idx1, t1]: llvm::enumerate(transitions)){
-    for(auto [idx2, t2]: llvm::enumerate(transitions)){
-      if(t1.to == t2.from && idx1 != idx2){
-        // build implication here (tail = lhs, head = rhs)
-        vector<expr> solverVarsAfter;
-        copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
-        
-        if (t1.isAction)
-          solverVarsAfter = t1.action(solverVars);
-        for (int k=0;k<numArgs; k++){
-          if (solverVarsAfter[k].is_bool())
-            solverVarsAfter[k] = c.bool_const((solverVarsAfter[k].to_string()+"_p").c_str());
-          else
-            solverVarsAfter[k] = c.int_const((solverVarsAfter[k].to_string()+"_p").c_str());
-        }
-        solverVarsAfter[solverVarsAfter.size()-1]= solverVarsAfter[solverVarsAfter.size()-1] + 1;
-        expr guard1 = c.bool_val(true);
-        expr guard2 = c.bool_val(true);
+    llvm::outs()<<"\nfrom "<<t1.from<<" to "<<t1.to;
+    // build implication here (tail = lhs, head = rhs)
+    vector<expr> stateArgsAfter(stateArgs);
 
-        if(t1.isGuard)
-          guard1 = t1.guard(solverVars);
-        if(t2.isGuard)
-          guard2 = t2.guard(solverVarsAfter);
+    if(V)
+      llvm::outs()<<"\n1size of saa: "<<stateArgsAfter.size();
 
+    if(V)
+    for(auto sa: stateArgs)
+        llvm::outs()<<"\nsa: "<<sa.to_string();
+    
+    if (t1.isAction)
+      stateArgsAfter = t1.action(stateArgs);
 
-        expr tail = transitionActive[idx1](solverVars.size(), solverVars.data()) && guard1 && guard2;
-        expr head = transitionActive[idx2](solverVarsAfter.size(), solverVarsAfter.data());
-        expr body = implies(tail, head);
-        expr imp = nestedForall(solverVars, body, numArgs, numOutputs, c);
-        s.add(imp);
-      }
+    if(V)
+      llvm::outs()<<"\n2size of saa: "<<stateArgsAfter.size();
+      
+    // nb. there are no inputs in the arguments of actions and states
+
+    stateArgsAfter.back() = stateArgsAfter.back() + 1;
+    expr guard1 = c.bool_val(true);
+
+    if(t1.isGuard)
+      guard1 = t1.guard(guardArgs);
+    llvm::outs()<<"guard is: "<<guard1.to_string();
+
+    vector<expr> nestingVars(stateArgs);
+    for(auto [i, ga]: llvm::enumerate(guardArgs)){
+      if (int(i)<numArgs)
+        nestingVars.push_back(ga);
     }
+
+    if(V)
+      for (const auto& saa: stateArgsAfter)
+        llvm::outs()<<"\nsaa: "<<saa.to_string();
+
+    expr tail = statesActive[t1.from](stateArgs.size(), stateArgs.data()) && guard1;
+    if(V)
+      llvm::outs()<<"\ntail: "<<tail.to_string();
+    expr head = statesActive[t1.to](stateArgsAfter.size(), stateArgsAfter.data());
+    if(V)
+      llvm::outs()<<"\nhead: "<<head.to_string();
+    expr body = implies(tail, head);
+    if(V)
+      llvm::outs()<<"\nbody: "<<body.to_string();
+
+    expr imp = nestedForall(nestingVars, body, numArgs, numOutputs, c);
+    s.add(imp);
   }
+
   vector<func_decl> argInputs;
   // mutual exclusion 
 
-  for (auto [idx1, t1]: llvm::enumerate(transitions)){
-    expr tail = transitionActive[idx1](solverVars.size(), solverVars.data());
+  for (const auto& sa1: statesActive){
+    expr tail = sa1(stateArgs.size(), stateArgs.data());
     expr head = c.bool_val(true);
-    for(auto [idx2, t2]: llvm::enumerate(transitions)){
-      if (idx1!=idx2)
-        head = head && (!transitionActive[idx2](solverVars.size(), solverVars.data()));
-    }
+    for(const auto& sa2: statesActive)
+      head = head && (!sa2(stateArgs.size(), stateArgs.data()));
     expr body = implies(tail, head);
     // do not change the 0 here 
-    s.add(nestedForall(solverVars, body, 0, numOutputs, c));
+    s.add(nestedForall(stateArgs, body, 0, numOutputs, c));
   }
 
-  auto r = parseLTL(property, solverVars, stateInv, transitions, transitionActive, numArgs, numOutputs, c);
+  auto r = parseLTL(property, stateArgs, stateInv, transitions, statesActive, numArgs, numOutputs, c);
   s.add(r);
 
-  printSolverAssertions(c, s, output, transitionActive, argInputs);
+  printSolverAssertions(c, s, output, statesActive, argInputs);
 }
 
 int main(int argc, char **argv) {
