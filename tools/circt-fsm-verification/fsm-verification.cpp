@@ -14,7 +14,7 @@
 #include <z3++.h>
 #include <z3_api.h>
 
-#define V 0
+#define V 1
 
 using namespace llvm;
 using namespace mlir;
@@ -185,8 +185,12 @@ expr getGuardExpr(vector<std::pair<expr, mlir::Value>> &exprMap, Region &guard,
 
   for (auto &op : guard.getOps()) {
     if (auto retop = dyn_cast<fsm::ReturnOp>(op)) {
+      if(V)
+        llvm::outs()<<"\nreturning: "<<retop;
       for (const auto& e : exprMap) {
-        if (e.second == retop.getOperand()) {
+        if (e.second == retop.getOperand()) { 
+          if(V)
+            llvm::outs()<<"\nwhose expression is "<<e.first.to_string();
 
           return e.first;
         }
@@ -400,9 +404,12 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                           z3Fun g = [&r, &vecVal, &c](vector<expr> vec) {
                             vector<std::pair<expr, mlir::Value>> exprMapTmp;
                             for (auto [value, expr] : llvm::zip(vecVal, vec)) {
+                              llvm::outs()<<value<<" and expr "<<expr.to_string()<<" in guard \n";
                               exprMapTmp.push_back({expr, value});
                             }
                             expr guardExpr = getGuardExpr(exprMapTmp, r, c);
+                            if(V) 
+                              llvm::outs()<<"guardExpr: "<<guardExpr.to_string();
                             return guardExpr;
                           };
                           t.guard = g;
@@ -488,7 +495,18 @@ expr nestedForall(vector<expr> &solverVars, expr &body, int numArgs,
 
   univQ.push_back(solverVars[int(solverVars.size())-1]);
 
+  if(V)
+    for(auto u: univQ)
+      llvm::outs()<<"\nunq: "<<u.to_string();
+  
+  if(V)
+    llvm::outs()<<"\nbody in nested: "<<body.to_string();
+
+
   expr ret = forall(univQ, body);
+
+  if(V)
+    llvm::outs()<<"\nret in nested: "<<ret.to_string();
 
   return ret;
 }
@@ -550,6 +568,7 @@ expr parseLTL(const string& inputFile, vector<expr> &solverVars,
         if (auto ev = dyn_cast<ltl::EventuallyOp>(op)) {
           auto attrDict = ev.getOperation()->getAttrs();
           if (attrDict.size() == 1) {
+            llvm::outs()<<"\nhere";
             // reachability
             auto a0 = (attrDict[0].getValue());
             string var;
@@ -560,6 +579,7 @@ expr parseLTL(const string& inputFile, vector<expr> &solverVars,
             int id = stoi(var);
             expr body = implies(transitionActive.at(id)(
                 int(solverVars.size()), solverVars.data()), false);
+            llvm::outs()<<"\nprop body "<<body.to_string();
             expr ret = nestedForall(solverVars, body, numArgs, numOutputs, c);
             return ret;
           }
@@ -845,7 +865,7 @@ void parseFSM(const string& input, const string& property, const string& output)
   // create uninterpreted function vec -> bool for each transition
 
   for (const auto& t: transitions){
-    const symbol cc = c.str_symbol(("tr"+to_string(t.from)+to_string(t.to)).c_str());
+    const symbol cc = c.str_symbol(("tr_"+to_string(t.from)+"_"+to_string(t.to)).c_str());
     Z3_func_decl inv = Z3_mk_func_decl(c, cc, invInput.size(), invInput.data(), c.bool_sort());
     func_decl inv2 = func_decl(c, inv);
     transitionActive.push_back(inv2);
@@ -856,6 +876,8 @@ void parseFSM(const string& input, const string& property, const string& output)
   expr tail = solverVars[solverVars.size()-1]==-1;
   expr head = transitionActive[0](solverVarsInit.size(), solverVarsInit.data());
   expr body = implies(tail, head);
+        llvm::outs()<<"\n1 imp: "<<body.to_string();
+
   s.add(nestedForall(solverVars, body, numArgs, numOutputs, c));
 
   // traverse all transitions and build implications from one to the other 
@@ -864,8 +886,7 @@ void parseFSM(const string& input, const string& property, const string& output)
     for(auto [idx2, t2]: llvm::enumerate(transitions)){
       if(t1.to == t2.from && idx1 != idx2){
         // build implication here (tail = lhs, head = rhs)
-        vector<expr> solverVarsAfter;
-        copy(solverVars.begin(), solverVars.end(), back_inserter(solverVarsAfter));
+        vector<expr> solverVarsAfter(solverVars);
         
         if (t1.isAction)
           solverVarsAfter = t1.action(solverVars);
@@ -875,20 +896,35 @@ void parseFSM(const string& input, const string& property, const string& output)
           else
             solverVarsAfter[k] = c.int_const((solverVarsAfter[k].to_string()+"_p").c_str());
         }
-        solverVarsAfter[solverVarsAfter.size()-1]= solverVarsAfter[solverVarsAfter.size()-1] + 1;
+        solverVarsAfter.back()= solverVarsAfter.back() + 1;
         expr guard1 = c.bool_val(true);
         expr guard2 = c.bool_val(true);
 
-        if(t1.isGuard)
-          guard1 = t1.guard(solverVars);
+        llvm::outs()<<"\nbefore calling guard between "<<transitionActive[idx1].to_string()<<" and "<<transitionActive[idx2].to_string();
+
+
+        if(t1.isGuard){
+          guard1 = guard1 && t1.guard(solverVars);
+        }
         if(t2.isGuard)
-          guard2 = t2.guard(solverVarsAfter);
+          guard2 = guard2 && t2.guard(solverVarsAfter);
+
 
 
         expr tail = transitionActive[idx1](solverVars.size(), solverVars.data()) && guard1 && guard2;
+        llvm::outs()<<"\ntail: "<<tail.to_string();
+
         expr head = transitionActive[idx2](solverVarsAfter.size(), solverVarsAfter.data());
+        llvm::outs()<<"\nhead: "<<head.to_string();
+
         expr body = implies(tail, head);
+        llvm::outs()<<"\nbody: "<<body.to_string();
+
+        for(auto sv: solverVars)
+          llvm::outs()<<sv.to_string();
+
         expr imp = nestedForall(solverVars, body, numArgs, numOutputs, c);
+        llvm::outs()<<"\nimp: "<<imp.to_string();
         s.add(imp);
       }
     }
