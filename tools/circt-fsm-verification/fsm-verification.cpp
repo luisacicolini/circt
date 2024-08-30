@@ -14,7 +14,7 @@
 #include <z3++.h>
 #include <z3_api.h>
 
-#define V 1
+#define V 0
 
 using namespace llvm;
 using namespace mlir;
@@ -481,7 +481,8 @@ expr nestedForall(vector<expr> &solverVars, expr &body, int numArgs,
   z3::expr_vector univQ(c);
 
   for(const auto& sv: solverVars){
-    llvm::outs()<<"\nuniv. quant. over "<<sv.to_string();
+    if(V)
+      llvm::outs()<<"\nuniv. quant. over "<<sv.to_string();
     univQ.push_back(sv);
   }
 
@@ -781,7 +782,11 @@ void parseFSM(const string& input, const string& property, const string& output)
     llvm::outs() << "initial state: " << initialState << "\n";
   }
 
+  vector<func_decl> inputValAtTime;
+
   int numArgs = populateArgs(mod, vecVal, variables, c);
+
+
 
   vector<int> initValues;
 
@@ -793,6 +798,7 @@ void parseFSM(const string& input, const string& property, const string& output)
   populateST(mod, c, stateInv, transitions, vecVal, numOutputs);
 
   vector<func_decl> statesActive;
+
 
   vector<expr> stateArgs;
 
@@ -814,6 +820,19 @@ void parseFSM(const string& input, const string& property, const string& output)
   Z3_sort timeSort = c.int_sort();
 
   stateArgsSort.push_back(timeSort);
+
+  for (int i=0; i<numArgs; i++){
+    vector<Z3_sort> tmp;
+    if(vecVal[i].getType().getIntOrFloatBitWidth()>1)
+      tmp.push_back(c.int_sort());
+    else
+      tmp.push_back(c.bool_sort());
+    tmp.push_back(timeSort);
+    const symbol cc = c.str_symbol(("fun_in"+to_string(i)).c_str());
+    Z3_func_decl inv = Z3_mk_func_decl(c, cc, 2, tmp.data(), c.bool_sort());
+    func_decl inv2 = func_decl(c, inv);
+    inputValAtTime.push_back(inv2);
+  }
 
   // initialize variables' values
 
@@ -874,6 +893,9 @@ void parseFSM(const string& input, const string& property, const string& output)
     statesActive.push_back(inv2);
   }
 
+
+
+
   // initial condition (fake transition with no action nor guards)
 
   expr tail = stateArgs.back()==-1;
@@ -906,9 +928,19 @@ void parseFSM(const string& input, const string& property, const string& output)
     stateArgsAfter.back() = stateArgsAfter.back() + 1;
     expr guard1 = c.bool_val(true);
 
-    if(t1.isGuard)
+    if(t1.isGuard){
+
       guard1 = t1.guard(guardArgs);
+    }
     llvm::outs()<<"guard is: "<<guard1.to_string();
+
+    for(auto [i, arg] : llvm::enumerate(inputValAtTime)){
+      vector<expr> arguments;
+      arguments.push_back(guardArgs[i]);
+      arguments.push_back(stateArgs.back());
+      guard1 = guard1 && arg(arguments.size(), arguments.data());
+      llvm::outs()<<"\nguard1: "<<guard1.to_string();
+    }
 
     vector<expr> nestingVars(stateArgs);
     for(auto [i, ga]: llvm::enumerate(guardArgs)){
@@ -919,6 +951,9 @@ void parseFSM(const string& input, const string& property, const string& output)
     if(V)
       for (const auto& saa: stateArgsAfter)
         llvm::outs()<<"\nsaa: "<<saa.to_string();
+    
+
+
 
     expr tail = statesActive[t1.from](stateArgs.size(), stateArgs.data()) && guard1;
     if(V)
@@ -934,23 +969,42 @@ void parseFSM(const string& input, const string& property, const string& output)
     s.add(imp);
   }
 
-  vector<func_decl> argInputs;
   // mutual exclusion 
 
-  for (const auto& sa1: statesActive){
+  for (auto [id1, sa1]: llvm::enumerate(statesActive)){
     expr tail = sa1(stateArgs.size(), stateArgs.data());
     expr head = c.bool_val(true);
-    for(const auto& sa2: statesActive)
-      head = head && (!sa2(stateArgs.size(), stateArgs.data()));
+    for(auto [id2, sa2]: llvm::enumerate(statesActive)){
+      if (id1 != id2)
+        head = head && (!sa2(stateArgs.size(), stateArgs.data()));
+    }
     expr body = implies(tail, head);
     // do not change the 0 here 
     s.add(nestedForall(stateArgs, body, 0, numOutputs, c));
   }
 
+  for (auto [i, ivt]: llvm::enumerate(inputValAtTime)){
+    vector<expr> nestArgs;
+    expr ap(c);
+    if(guardArgs[i].is_bool())
+      ap = c.bool_const("in_p");
+    else
+      ap = c.int_const("in_p");
+    nestArgs.push_back(guardArgs[i]);
+    nestArgs.push_back(ap);
+    nestArgs.push_back(time);
+
+    expr tail = (ivt(guardArgs[i], time) && guardArgs[i] != ap);
+    expr head = !ivt(ap, time);
+    expr body = implies(tail, head);
+    // do not change the 0 here 
+    s.add(nestedForall(nestArgs, body, 0, numOutputs, c));
+  }
+
   auto r = parseLTL(property, stateArgs, stateInv, transitions, statesActive, numArgs, numOutputs, c);
   s.add(r);
 
-  printSolverAssertions(c, s, output, statesActive, argInputs);
+  printSolverAssertions(c, s, output, statesActive, inputValAtTime);
 }
 
 int main(int argc, char **argv) {
