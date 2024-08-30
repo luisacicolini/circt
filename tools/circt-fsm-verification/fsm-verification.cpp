@@ -14,7 +14,7 @@
 #include <z3++.h>
 #include <z3_api.h>
 
-#define V 1
+#define V 0
 
 using namespace llvm;
 using namespace mlir;
@@ -404,7 +404,6 @@ void populateST(Operation &mod, context &c, vector<string> &stateInv,
                           z3Fun g = [&r, &vecVal, &c](vector<expr> vec) {
                             vector<std::pair<expr, mlir::Value>> exprMapTmp;
                             for (auto [value, expr] : llvm::zip(vecVal, vec)) {
-                              llvm::outs()<<value<<" and expr "<<expr.to_string()<<" in guard \n";
                               exprMapTmp.push_back({expr, value});
                             }
                             expr guardExpr = getGuardExpr(exprMapTmp, r, c);
@@ -830,37 +829,37 @@ void parseFSM(const string& input, const string& property, const string& output)
   // enforce self-loops if none of the guards is respected
   vector<int> visited;
 
-  for(auto [idx1, t1]: llvm::enumerate(transitions)){
-    bool found = false;
-    for (auto v: visited)
-      if (t1.from == v)
-        found = true;
-    if (t1.isGuard && !found){
-      visited.push_back(t1.from);
-      vector<z3Fun> tmpGuards;
-      tmpGuards.push_back(t1.guard);  
-      for(auto [idx2, t2]: llvm::enumerate(transitions)){
-        if(idx1!=idx2 && t1.from == t2.from && t2.isGuard)
-          tmpGuards.push_back(t2.guard);
-      }
+  // for(auto [idx1, t1]: llvm::enumerate(transitions)){
+  //   bool found = false;
+  //   for (auto v: visited)
+  //     if (t1.from == v)
+  //       found = true;
+  //   if (t1.isGuard && !found){
+  //     visited.push_back(t1.from);
+  //     vector<z3Fun> tmpGuards;
+  //     tmpGuards.push_back(t1.guard);  
+  //     for(auto [idx2, t2]: llvm::enumerate(transitions)){
+  //       if(idx1!=idx2 && t1.from == t2.from && t2.isGuard)
+  //         tmpGuards.push_back(t2.guard);
+  //     }
 
-      z3Fun tmpG = [tmpGuards, &c](const vector<expr>& vec) {
-        expr neg = c.bool_val(true);
-        for(const auto& tmp: tmpGuards){
-          neg = neg && !tmp(vec);
-        }
-        return neg;
-      };
-      Transition t;
-      t.from = t1.from;
-      t.to = t1.from;
-      t.isGuard = true;
-      t.guard = tmpG;
-      t.isAction = false;
-      t.isOutput = false;
-      transitions.push_back(t);
-    }
-  }
+  //     z3Fun tmpG = [tmpGuards, &c](vector<expr> vec) {
+  //       expr neg = c.bool_val(true);
+  //       for(const auto& tmp: tmpGuards){
+  //         neg = neg && !tmp(vec);
+  //       }
+  //       return neg;
+  //     };
+  //     Transition t;
+  //     t.from = t1.from;
+  //     t.to = t1.from;
+  //     t.isGuard = true;
+  //     t.guard = tmpG;
+  //     t.isAction = false;
+  //     t.isOutput = false;
+  //     transitions.push_back(t);
+  //   }
+  // }
 
   // create uninterpreted function vec -> bool for each transition
 
@@ -900,7 +899,6 @@ void parseFSM(const string& input, const string& property, const string& output)
         expr guard1 = c.bool_val(true);
         expr guard2 = c.bool_val(true);
 
-        llvm::outs()<<"\nbefore calling guard between "<<transitionActive[idx1].to_string()<<" and "<<transitionActive[idx2].to_string();
 
 
         if(t1.isGuard){
@@ -912,19 +910,12 @@ void parseFSM(const string& input, const string& property, const string& output)
 
 
         expr tail = transitionActive[idx1](solverVars.size(), solverVars.data()) && guard1 && guard2;
-        llvm::outs()<<"\ntail: "<<tail.to_string();
 
         expr head = transitionActive[idx2](solverVarsAfter.size(), solverVarsAfter.data());
-        llvm::outs()<<"\nhead: "<<head.to_string();
 
         expr body = implies(tail, head);
-        llvm::outs()<<"\nbody: "<<body.to_string();
-
-        for(auto sv: solverVars)
-          llvm::outs()<<sv.to_string();
 
         expr imp = nestedForall(solverVars, body, numArgs, numOutputs, c);
-        llvm::outs()<<"\nimp: "<<imp.to_string();
         s.add(imp);
       }
     }

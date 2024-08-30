@@ -29,7 +29,7 @@ for file in os.listdir("../"+folder):
 
     if prop == 1:
         ltl.write("%state = unrealized_conversion_cast to !ltl.property\n")
-        ltl.write("%e0 = ltl.eventually %state {state = \"_"+str(states-2)+"\"} : !ltl.property")
+        ltl.write("%e0 = ltl.eventually %state {state = \""+str(states-2)+"\"} : !ltl.property")
 
     elif prop == 2:
         ltl.write("%state = unrealized_conversion_cast to !ltl.property\n")
