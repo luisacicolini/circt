@@ -969,20 +969,6 @@ void parseFSM(const string& input, const string& property, const string& output)
     s.add(imp);
   }
 
-  // mutual exclusion 
-
-  for (auto [id1, sa1]: llvm::enumerate(statesActive)){
-    expr tail = sa1(stateArgs.size(), stateArgs.data());
-    expr head = c.bool_val(true);
-    for(auto [id2, sa2]: llvm::enumerate(statesActive)){
-      if (id1 != id2)
-        head = head && (!sa2(stateArgs.size(), stateArgs.data()));
-    }
-    expr body = implies(tail, head);
-    // do not change the 0 here 
-    s.add(nestedForall(stateArgs, body, 0, numOutputs, c));
-  }
-
   for (auto [i, ivt]: llvm::enumerate(inputValAtTime)){
     vector<expr> nestArgs;
     expr ap(c);
