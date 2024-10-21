@@ -112,11 +112,11 @@ mlir::Value getCombValue(Operation &op, Location &loc, OpBuilder &b, llvm::Small
   if (auto addOp = llvm::dyn_cast<comb::AddOp>(op))
     return b.create<smt::BVAddOp>(loc, b.getType<smt::BitVectorType>(a.getWidth()), args);
   if (auto andOp = llvm::dyn_cast<comb::AndOp>(op))
-    return b.create<smt::BVAndOp>(loc, b.getType<smt::BoolType>(), args);
+    return b.create<smt::BVAndOp>(loc, b.getType<smt::BitVectorType>(a.getWidth()), args);
   if (auto xorOp = llvm::dyn_cast<comb::XorOp>(op))
-    return b.create<smt::BVXOrOp>(loc, b.getType<smt::BoolType>(), args);
+    return b.create<smt::BVXOrOp>(loc, b.getType<smt::BitVectorType>(a.getWidth()), args);
   if (auto orOp = llvm::dyn_cast<comb::OrOp>(op))
-    return b.create<smt::BVOrOp>(loc, b.getType<smt::BoolType>(), args);
+    return b.create<smt::BVOrOp>(loc, b.getType<smt::BitVectorType>(a.getWidth()), args);
   if (auto mulOp = llvm::dyn_cast<comb::MulOp>(op))
     return b.create<smt::BVMulOp>(loc, b.getType<smt::BitVectorType>(a.getWidth()), args);
   if (auto icmp = llvm::dyn_cast<comb::ICmpOp>(op)){
