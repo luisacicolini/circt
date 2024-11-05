@@ -207,8 +207,6 @@ LogicalResult MachineOpConverter::dispatch() {
 
   llvm::SmallVector<mlir::Value> argVars;
 
-  argVars.push_back(b.create<smt::BVConstantOp>(loc, 0, 32));
-
   int numArgs = 0;
   int numOut = 0;
 
@@ -345,9 +343,6 @@ LogicalResult MachineOpConverter::dispatch() {
       llvm::SmallVector<mlir::Value> outputSmtValues;
       llvm::SmallVector<mlir::Value> actionArgs;
 
-      for(auto aai : actionArgsInt)
-        llvm::outs()<<"\naai: "<<aai;
-
       for(auto [id, aai] : llvm::enumerate(actionArgsInt))
         if (id >= 1)
           actionArgs.push_back(aai);
@@ -374,8 +369,7 @@ LogicalResult MachineOpConverter::dispatch() {
         // argvars has both inputs and time
         updatedSmtValues.push_back(b.create<smt::BVConstantOp>(loc, t1.to, 32));
         for (auto [id, av] : llvm::enumerate(argVars))
-          if (id >=1)
-            avToSmt.push_back({av, actionArgs[id]});
+          avToSmt.push_back({av, actionArgs[id]});
         for (auto [j, uv] : llvm::enumerate(avToSmt)) {
           // only variables can be updated and time is updated separately
           bool found = false;
@@ -391,7 +385,7 @@ LogicalResult MachineOpConverter::dispatch() {
               }
             }
           }
-          if (!found) // the value is not updated in the region
+          if (!found && j >= 1) // the value is not updated in the region
             updatedSmtValues.push_back(uv.second);
         }
 
@@ -405,8 +399,6 @@ LogicalResult MachineOpConverter::dispatch() {
         for (auto [i, outputVal] : llvm::enumerate(outputSmtValues)) {
           updatedSmtValues[1 + numArgs + i] = outputVal;
         }
-        for(auto usv : updatedSmtValues)
-          llvm::outs()<<"\nusv: "<<usv;
         return updatedSmtValues;
       }
       llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
@@ -414,9 +406,9 @@ LogicalResult MachineOpConverter::dispatch() {
       updatedSmtValues.push_back(b.create<smt::BVConstantOp>(loc, t1.to, 32));
 
       for (auto [id, av] : llvm::enumerate(argVars))
-        if (id >= 1)
-          avToSmt.push_back({av, actionArgs[id]});
+        avToSmt.push_back({av, actionArgs[id]});
       for (auto [j, uv] : llvm::enumerate(avToSmt)) {
+        if (j >= 1)
           updatedSmtValues.push_back(uv.second);
       }
       // update time
@@ -430,15 +422,11 @@ LogicalResult MachineOpConverter::dispatch() {
       for (auto [i, outputVal] : llvm::enumerate(outputSmtValues)) {
         updatedSmtValues[1 + numArgs + i] = outputVal;
       }
-      for(auto usv : updatedSmtValues)
-        llvm::outs()<<"\nusv: "<<usv;
       return updatedSmtValues;
     };
 
     auto guard1 = [&t1, &loc, this, &argVars, &inputFunctions](
                       llvm::SmallVector<mlir::Value> guardArgs) -> mlir::Value {
-      for(auto ga : guardArgs)
-        llvm::outs()<<"\nga: "<<ga;
       if (t1.hasGuard) {
         llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
         for (auto [av, a] : llvm::zip(argVars, guardArgs))
@@ -447,11 +435,9 @@ LogicalResult MachineOpConverter::dispatch() {
           if (auto retOp = dyn_cast<fsm::ReturnOp>(op)) {
             auto tmp = getSmtValue(retOp->getOperand(0), avToSmt,
                                    guardArgs.back(), b, loc);
-            llvm::outs()<<"\ntmp: "<<tmp;
             return tmp;
           }
       } else {
-        llvm::outs()<<"\ntmp: true";
         return b.create<smt::BoolConstantOp>(loc, true);
       }
     };
@@ -460,8 +446,6 @@ LogicalResult MachineOpConverter::dispatch() {
         loc, argVarTypes,
         [&guard1, &action, &t1, &transitionFunction, &numArgs,
          &numOut](OpBuilder &b, Location loc, ValueRange forallArgs) {
-          for(auto fa : forallArgs)
-            llvm::outs()<<"\nfa: "<<fa;
           // split new and old arguments
           auto t1ac = b.create<smt::ApplyFuncOp>(loc, transitionFunction,
                                                  forallArgs);
