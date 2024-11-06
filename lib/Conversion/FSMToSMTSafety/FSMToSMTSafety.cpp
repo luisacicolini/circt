@@ -492,7 +492,13 @@ LogicalResult MachineOpConverter::dispatch() {
               b.create<smt::EqOp>(
                   loc, startingStateArgs[0],
                   b.create<smt::BVConstantOp>(loc, t1.from, 32)));
-          auto actionedArgs = action(arrivingStateArgs);
+          auto actionedArgs = action(startingStateArgs);
+          for (auto [ida, aa] : llvm::enumerate(actionedArgs)){
+
+            if (ida >= 1 && ida < 1 + numArgs*2){
+                actionedArgs[ida] = arrivingStateArgs[ida];
+            } 
+          }
           auto rhs =
               b.create<smt::ApplyFuncOp>(loc, transitionFunction, actionedArgs);
           auto guard = guard1(startingStateArgs);
