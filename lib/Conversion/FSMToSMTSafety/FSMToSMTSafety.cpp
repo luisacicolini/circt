@@ -454,21 +454,48 @@ LogicalResult MachineOpConverter::dispatch() {
       }
     };
 
+    llvm::SmallVector<mlir::Type> forallArgVarTypes;
+
+    for (auto [id, avt] : llvm::enumerate(argVarTypes)){
+      if (id >= 1 && id < 1 + numArgs){
+        forallArgVarTypes.push_back(avt);
+        forallArgVarTypes.push_back(avt);
+      } else {
+        forallArgVarTypes.push_back(avt);
+      }
+    }
+
     auto forall = b.create<smt::ForallOp>(
-        loc, argVarTypes,
+        loc, forallArgVarTypes,
         [&guard1, &action, &t1, &transitionFunction, &numArgs,
-         &numOut](OpBuilder &b, Location loc, ValueRange forallArgs) {
+         &numOut](OpBuilder &b, Location loc, llvm::SmallVector<mlir::Value> forallDoubleInputs) {
           // split new and old arguments
+          llvm::SmallVector<mlir::Value> startingStateArgs;
+          llvm::SmallVector<mlir::Value> arrivingStateArgs;
+          for (auto [idx, fdi] : llvm::enumerate(forallDoubleInputs)){
+
+            if (idx >= 1 && idx < 1 + numArgs*2){
+              if (idx % 2 == 1){
+                startingStateArgs.push_back(fdi);
+              }else{ 
+                arrivingStateArgs.push_back(fdi);
+              }
+            } else {
+              startingStateArgs.push_back(fdi);
+              arrivingStateArgs.push_back(fdi);
+            }
+          }
+
           auto t1ac = b.create<smt::AndOp>(
               loc,
-              b.create<smt::ApplyFuncOp>(loc, transitionFunction, forallArgs),
+              b.create<smt::ApplyFuncOp>(loc, transitionFunction, startingStateArgs),
               b.create<smt::EqOp>(
-                  loc, forallArgs[0],
+                  loc, startingStateArgs[0],
                   b.create<smt::BVConstantOp>(loc, t1.from, 32)));
-          auto actionedArgs = action(forallArgs);
+          auto actionedArgs = action(arrivingStateArgs);
           auto rhs =
               b.create<smt::ApplyFuncOp>(loc, transitionFunction, actionedArgs);
-          auto guard = guard1(forallArgs);
+          auto guard = guard1(startingStateArgs);
           if (dyn_cast<smt::BoolType>(guard.getType())) {
 
             auto lhs = b.create<smt::AndOp>(loc, t1ac, guard);
@@ -488,7 +515,7 @@ LogicalResult MachineOpConverter::dispatch() {
     b.create<smt::AssertOp>(loc, forall);
   }
 
-  b.getBlock()->dump();
+  // b.getBlock()->dump();
 
   b.create<smt::YieldOp>(loc, typeRange, valueRange);
 
