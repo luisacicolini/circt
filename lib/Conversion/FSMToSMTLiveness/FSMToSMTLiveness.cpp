@@ -234,6 +234,9 @@ LogicalResult MachineOpConverter::dispatch(){
     }
   }
 
+  // state
+  varTypes.push_back(b.getType<smt::BitVectorType>(32));
+
   // fsm outputs
   if (machineOp.getResultTypes().size() > 0){
     for (auto o : machineOp.getResultTypes()){
@@ -253,7 +256,6 @@ LogicalResult MachineOpConverter::dispatch(){
     }
   }
 
-  varTypes.push_back(b.getType<smt::BitVectorType>(32));
 
   llvm::SmallVector<int> varInitValues;
   // fsm variables
@@ -558,38 +560,36 @@ LogicalResult MachineOpConverter::dispatch(){
 
   // mutual exclusion of states
 
-  // for (auto [id1, s1] : llvm::enumerate(stateFunctions)){
-  
-  //   auto forall = b.create<smt::ForallOp>(loc, varTypes, [&s1, &id1, &stateFunctions, &numArgs](OpBuilder &b, Location loc, ValueRange forallArgs) { 
 
-  //     auto lhs = b.create<smt::ApplyFuncOp>(loc, s1, forallArgs);
-      
-  //     llvm::SmallVector<mlir::Value> toConcat;
-      
-  //     for (auto [id2, s2] : llvm::enumerate(stateFunctions)){
-        
-  //       if (id1!=id2){
-  //         auto appliedFun = b.create<smt::ApplyFuncOp>(loc, s2, forallArgs);
-  //         auto neg = b.create<smt::NotOp>(loc, appliedFun);
-  //         toConcat.push_back(neg);
-  //       }
+  llvm::SmallVector<mlir::Type> MutexcTypes;
+  MutexcTypes.push_back(b.getType<smt::BitVectorType>(32));
 
-  //     }
+  for (auto vt : varTypes){
+    MutexcTypes.push_back(vt);
+  }
 
-  //     auto tmp = b.create<smt::AndOp>(loc, toConcat[0], toConcat[1]);
 
-  //     for (auto [id, ag] : llvm::enumerate(toConcat)){
-  //       if (id > 1){
-  //         auto notChain = b.create<smt::AndOp>(loc, tmp, toConcat[id]);
-  //         tmp = notChain; 
-  //       }
-  //     }
+  auto forallMutex = b.create<smt::ForallOp>(loc, MutexcTypes, [&transitionFunction, &numArgs](OpBuilder &b, Location loc, ValueRange forallArgs) { 
 
-  //     return b.create<smt::ImpliesOp>(loc, lhs, tmp); 
-  //   });
+    llvm::SmallVector<mlir::Value> functionArgs1; 
+    llvm::SmallVector<mlir::Value> functionArgs2; 
+    for(auto [id, fa] : llvm::enumerate(forallArgs)){
+      if (id >= 1)
+        functionArgs1.push_back(fa);
+      if (id != 1)
+        functionArgs2.push_back(fa);
+    }
 
-  //   b.create<smt::AssertOp>(loc, forall);
-  // }
+    auto lhs = b.create<smt::AndOp>(loc, b.create<smt::ApplyFuncOp>(loc, transitionFunction, functionArgs1), 
+                              b.create<smt::DistinctOp>(loc, forallArgs[0], forallArgs[1]));
+    
+    auto rhs = b.create<smt::NotOp>(loc, b.create<smt::ApplyFuncOp>(loc, transitionFunction, functionArgs2));
+
+
+    return b.create<smt::ImpliesOp>(loc, lhs, rhs); 
+  });
+
+  b.create<smt::AssertOp>(loc, forallMutex);
 
   b.create<smt::YieldOp>(loc, typeRange, valueRange);
 
