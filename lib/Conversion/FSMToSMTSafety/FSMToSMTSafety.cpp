@@ -454,8 +454,8 @@ LogicalResult MachineOpConverter::dispatch() {
         [&guard1, &action, &t1, &transitionFunction, &numArgs,
          &numOut](OpBuilder &b, Location loc, ValueRange forallArgs) {
           // split new and old arguments
-          auto t1ac = b.create<smt::ApplyFuncOp>(loc, transitionFunction,
-                                                 forallArgs);
+          auto t1ac = b.create<smt::AndOp>(loc, b.create<smt::ApplyFuncOp>(loc, transitionFunction,
+                                                 forallArgs), b.create<smt::EqOp>(loc, forallArgs[0], b.create<smt::BVConstantOp>(loc, t1.from, 32)));
           auto actionedArgs = action(forallArgs);
           auto rhs = b.create<smt::ApplyFuncOp>(loc, transitionFunction,
                                                 actionedArgs);
