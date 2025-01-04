@@ -22,11 +22,9 @@
 
 - bin/circt-opt --lower-esi-to-hw ../hs-dc-hw-examples/long-datapath-dc-esi-ports-to-hw.mlir > ../hs-dc-hw-examples/long-datapath-dc-esi-to-hw.mlir
 
-#### current problem with export verilog: 
-need to replace arith.select, since --export-verilog can't digest it
+### map arith to comb: 
 
-#### current solution: 
-replace arith.select with comb.mux for now, done in long-datapath-dc-esi-to-hw-arith-to-comb.mlir
+- bin/circt-opt --map-arith-to-comb ../hs-dc-hw-examples/long-datapath-dc-esi-to-hw.mlir > ../hs-dc-hw-examples/long-datapath-dc-esi-to-hw-arith-to-comb.mlir
 
 ### lower to systemverilog and prettify:
 
@@ -34,10 +32,8 @@ replace arith.select with comb.mux for now, done in long-datapath-dc-esi-to-hw-a
 
 - bin/circt-opt --prettify-verilog ../hs-dc-hw-examples/long-datapath-sv.mlir > ../hs-dc-hw-examples/long-datapath-sv-prettified.mlir
 
-- bin/circt-opt --lower-seq-to-sv ../hs-dc-hw-examples/long-data
-path-sv-prettified.mlir > ../hs-dc-hw-examples/long-datapath-sv-seq-sv.mlir
+- bin/circt-opt --lower-seq-to-sv ../hs-dc-hw-examples/long-datapath-sv-prettified.mlir > ../hs-dc-hw-examples/long-datapath-sv-seq-sv.mlir
 
 ### export verilog
 
-- bin/circt-opt --export-verilog ../hs-dc-hw-examples/long-datap
-ath-sv-seq-sv.mlir > ../hs-dc-hw-examples/long-datapath-verilog.v
+- bin/circt-opt --export-verilog ../hs-dc-hw-examples/long-datapath-sv-seq-sv.mlir > ../hs-dc-hw-examples/long-datapath-verilog.v
