@@ -10,7 +10,7 @@
 
 - `bin/circt-opt --canonicalize ../hs-dc-hw-examples/long-datapath-dc-materialized-1.mlir > ../hs-dc-hw-examples/long-datapath-dc-canonicalized.mlir`
 
--`bin/circt-opt --dc-materialize-forks-sinks ../hs-dc-hw-examples/long-datapath-dc-canonicalized.mlir > ../hs-dc-hw-examples/long-datapath-dc-materialized-2.mlir`
+- `bin/circt-opt --dc-materialize-forks-sinks ../hs-dc-hw-examples/long-datapath-dc-canonicalized.mlir > ../hs-dc-hw-examples/long-datapath-dc-materialized-2.mlir`
 
 ### lower dc to core:
 
