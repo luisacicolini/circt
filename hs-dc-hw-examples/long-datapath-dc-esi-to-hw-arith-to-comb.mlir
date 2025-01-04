@@ -13,7 +13,7 @@ module {
     %3 = comb.and %2, %arg0_valid : i1
     %4 = comb.and %2, %1 : i1
     %c0_i0_5 = hw.constant 0 : i0
-    %5 = arith.select %1, %arg0, %arg1 : i32
+    %5 = comb.mux %1, %arg0, %arg1 : i32
     %c0_i0_6 = hw.constant 0 : i0
     %c0_i0_7 = hw.constant 0 : i0
     %6 = comb.or %arg2_valid, %arg3_valid : i1
@@ -23,7 +23,7 @@ module {
     %9 = comb.and %8, %arg2_valid : i1
     %10 = comb.and %8, %7 : i1
     %c0_i0_9 = hw.constant 0 : i0
-    %11 = arith.select %7, %arg2, %arg3 : i32
+    %11 = comb.mux %7, %arg2, %arg3 : i32
     %c0_i0_10 = hw.constant 0 : i0
     %12 = comb.or %6, %arg4_valid : i1
     %true_11 = hw.constant true
@@ -32,7 +32,7 @@ module {
     %15 = comb.and %14, %6 : i1
     %16 = comb.and %14, %13 : i1
     %c0_i0_12 = hw.constant 0 : i0
-    %17 = arith.select %13, %11, %arg4 : i32
+    %17 = comb.mux %13, %11, %arg4 : i32
     %c0_i0_13 = hw.constant 0 : i0
     %c0_i0_14 = hw.constant 0 : i0
     %c0_i0_15 = hw.constant 0 : i0
@@ -76,11 +76,11 @@ module {
     %46 = comb.and %51, %45 : i1
     %47 = comb.or %46, %emitted_4 {sv.namehint = "done4"} : i1
     %48 = comb.and %23, %29, %35, %41, %47 {sv.namehint = "allDone"} : i1
-    %49 = arith.subi %5, %17 : i32
+    %49 = comb.sub %5, %17 : i32
     %c0_i0_19 = hw.constant 0 : i0
     %50 = comb.and %39, %0, %45 : i1
     %51 = comb.and %65, %50 : i1
-    %52 = arith.subi %17, %49 : i32
+    %52 = comb.sub %17, %49 : i32
     %c0_i0_20 = hw.constant 0 : i0
     %c0_i0_21 = hw.constant 0 : i0
     %false_22 = hw.constant false
@@ -100,11 +100,11 @@ module {
     %63 = comb.and %68, %62 : i1
     %64 = comb.or %63, %emitted_1_25 {sv.namehint = "done1"} : i1
     %65 = comb.and %58, %64 {sv.namehint = "allDone"} : i1
-    %66 = arith.muli %158, %52 : i32
+    %66 = comb.mul %158, %52 : i32
     %c0_i0_26 = hw.constant 0 : i0
     %67 = comb.and %56, %174, %62 : i1
     %68 = comb.and %82, %67 : i1
-    %69 = arith.divsi %66, %52 : i32
+    %69 = comb.divs %66, %52 : i32
     %c0_i0_27 = hw.constant 0 : i0
     %c0_i0_28 = hw.constant 0 : i0
     %false_29 = hw.constant false
@@ -124,11 +124,11 @@ module {
     %80 = comb.and %85, %79 : i1
     %81 = comb.or %80, %emitted_1_32 {sv.namehint = "done1"} : i1
     %82 = comb.and %75, %81 {sv.namehint = "allDone"} : i1
-    %83 = arith.divui %17, %69 : i32
+    %83 = comb.divu %17, %69 : i32
     %c0_i0_33 = hw.constant 0 : i0
     %84 = comb.and %73, %33, %79 : i1
     %85 = comb.and %99, %84 : i1
-    %86 = arith.remsi %83, %69 : i32
+    %86 = comb.divs %83, %69 : i32
     %c0_i0_34 = hw.constant 0 : i0
     %c0_i0_35 = hw.constant 0 : i0
     %false_36 = hw.constant false
@@ -151,7 +151,7 @@ module {
     %c0_i0_40 = hw.constant 0 : i0
     %100 = comb.and %27, %96 : i1
     %101 = comb.and %121, %100 : i1
-    %102 = arith.remui %17, %86 : i32
+    %102 = comb.divu %17, %86 : i32
     %c0_i0_41 = hw.constant 0 : i0
     %c0_i0_42 = hw.constant 0 : i0
     %c0_i0_43 = hw.constant 0 : i0
@@ -182,7 +182,7 @@ module {
     %c0_i0_49 = hw.constant 0 : i0
     %122 = comb.and %90, %118 : i1
     %123 = comb.and %137, %122 : i1
-    %124 = arith.muli %86, %102 : i32
+    %124 = comb.mul %86, %102 : i32
     %c0_i0_50 = hw.constant 0 : i0
     %c0_i0_51 = hw.constant 0 : i0
     %false_52 = hw.constant false
@@ -205,7 +205,7 @@ module {
     %c0_i0_56 = hw.constant 0 : i0
     %138 = comb.and %112, %134 : i1
     %139 = comb.and %153, %138 : i1
-    %140 = arith.remui %102, %124 : i32
+    %140 = comb.divs %102, %124 : i32
     %c0_i0_57 = hw.constant 0 : i0
     %c0_i0_58 = hw.constant 0 : i0
     %false_59 = hw.constant false
@@ -225,12 +225,12 @@ module {
     %151 = comb.and %157, %150 : i1
     %152 = comb.or %151, %emitted_1_62 {sv.namehint = "done1"} : i1
     %153 = comb.and %146, %152 {sv.namehint = "allDone"} : i1
-    %154 = arith.andi %124, %140 : i32
-    %155 = arith.ori %17, %140 : i32
+    %154 = comb.and %124, %140 : i32
+    %155 = comb.or %17, %140 : i32
     %c0_i0_63 = hw.constant 0 : i0
     %156 = comb.and %128, %150, %21, %144 : i1
     %157 = comb.and %177, %156 : i1
-    %158 = arith.xori %154, %155 : i32
+    %158 = comb.xor %154, %155 : i32
     %c0_i0_64 = hw.constant 0 : i0
     %c0_i0_65 = hw.constant 0 : i0
     %c0_i0_66 = hw.constant 0 : i0

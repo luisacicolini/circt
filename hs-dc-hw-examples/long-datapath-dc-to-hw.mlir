@@ -113,7 +113,7 @@ module {
     %46 = comb.and %ready_87, %45 : i1
     %47 = comb.or %46, %emitted_4 {sv.namehint = "done4"} : i1
     %48 = comb.and %23, %29, %35, %41, %47 {sv.namehint = "allDone"} : i1
-    %49 = arith.subi %5, %17 : i32
+    %49 = comb.sub %5, %17 : i32
     %rawOutput_89, %valid_90 = esi.unwrap.vr %chanOutput_83, %51 : i0
     %rawOutput_91, %valid_92 = esi.unwrap.vr %chanOutput_30, %51 : i0
     %rawOutput_93, %valid_94 = esi.unwrap.vr %chanOutput_86, %51 : i0
@@ -121,7 +121,7 @@ module {
     %chanOutput_96, %ready_97 = esi.wrap.vr %c0_i0_95, %50 : i0
     %50 = comb.and %valid_90, %valid_92, %valid_94 : i1
     %51 = comb.and %ready_97, %50 : i1
-    %52 = arith.subi %17, %49 : i32
+    %52 = comb.sub %17, %49 : i32
     %rawOutput_98, %valid_99 = esi.unwrap.vr %chanOutput_96, %65 : i0
     %c0_i0_100 = hw.constant 0 : i0
     %chanOutput_101, %ready_102 = esi.wrap.vr %c0_i0_100, %56 : i0
@@ -144,7 +144,7 @@ module {
     %63 = comb.and %ready_105, %62 : i1
     %64 = comb.or %63, %emitted_1_109 {sv.namehint = "done1"} : i1
     %65 = comb.and %58, %64 {sv.namehint = "allDone"} : i1
-    %66 = arith.muli %158, %52 : i32
+    %66 = comb.mul %158, %52 : i32
     %rawOutput_110, %valid_111 = esi.unwrap.vr %chanOutput_101, %68 : i0
     %rawOutput_112, %valid_113 = esi.unwrap.vr %chanOutput_237, %68 : i0
     %rawOutput_114, %valid_115 = esi.unwrap.vr %chanOutput_104, %68 : i0
@@ -152,7 +152,7 @@ module {
     %chanOutput_117, %ready_118 = esi.wrap.vr %c0_i0_116, %67 : i0
     %67 = comb.and %valid_111, %valid_113, %valid_115 : i1
     %68 = comb.and %ready_118, %67 : i1
-    %69 = arith.divsi %66, %52 : i32
+    %69 = comb.divs %66, %52 : i32
     %rawOutput_119, %valid_120 = esi.unwrap.vr %chanOutput_117, %82 : i0
     %c0_i0_121 = hw.constant 0 : i0
     %chanOutput_122, %ready_123 = esi.wrap.vr %c0_i0_121, %73 : i0
@@ -175,7 +175,7 @@ module {
     %80 = comb.and %ready_126, %79 : i1
     %81 = comb.or %80, %emitted_1_130 {sv.namehint = "done1"} : i1
     %82 = comb.and %75, %81 {sv.namehint = "allDone"} : i1
-    %83 = arith.divui %17, %69 : i32
+    %83 = comb.divu %17, %69 : i32
     %rawOutput_131, %valid_132 = esi.unwrap.vr %chanOutput_122, %85 : i0
     %rawOutput_133, %valid_134 = esi.unwrap.vr %chanOutput_80, %85 : i0
     %rawOutput_135, %valid_136 = esi.unwrap.vr %chanOutput_125, %85 : i0
@@ -183,7 +183,7 @@ module {
     %chanOutput_138, %ready_139 = esi.wrap.vr %c0_i0_137, %84 : i0
     %84 = comb.and %valid_132, %valid_134, %valid_136 : i1
     %85 = comb.and %ready_139, %84 : i1
-    %86 = arith.remsi %83, %69 : i32
+    %86 = comb.divs %83, %69 : i32
     %rawOutput_140, %valid_141 = esi.unwrap.vr %chanOutput_138, %99 : i0
     %c0_i0_142 = hw.constant 0 : i0
     %chanOutput_143, %ready_144 = esi.wrap.vr %c0_i0_142, %90 : i0
@@ -212,7 +212,7 @@ module {
     %chanOutput_157, %ready_158 = esi.wrap.vr %c0_i0_156, %100 : i0
     %100 = comb.and %valid_153, %valid_155 : i1
     %101 = comb.and %ready_158, %100 : i1
-    %102 = arith.remui %17, %86 : i32
+    %102 = comb.divu %17, %86 : i32
     %rawOutput_159, %valid_160 = esi.unwrap.vr %chanOutput_157, %121 : i0
     %c0_i0_161 = hw.constant 0 : i0
     %chanOutput_162, %ready_163 = esi.wrap.vr %c0_i0_161, %106 : i0
@@ -252,7 +252,7 @@ module {
     %chanOutput_184, %ready_185 = esi.wrap.vr %c0_i0_183, %122 : i0
     %122 = comb.and %valid_180, %valid_182 : i1
     %123 = comb.and %ready_185, %122 : i1
-    %124 = arith.muli %86, %102 : i32
+    %124 = comb.mul %86, %102 : i32
     %rawOutput_186, %valid_187 = esi.unwrap.vr %chanOutput_184, %137 : i0
     %c0_i0_188 = hw.constant 0 : i0
     %chanOutput_189, %ready_190 = esi.wrap.vr %c0_i0_188, %128 : i0
@@ -281,7 +281,7 @@ module {
     %chanOutput_203, %ready_204 = esi.wrap.vr %c0_i0_202, %138 : i0
     %138 = comb.and %valid_199, %valid_201 : i1
     %139 = comb.and %ready_204, %138 : i1
-    %140 = arith.remui %102, %124 : i32
+    %140 = comb.divs %102, %124 : i32
     %rawOutput_205, %valid_206 = esi.unwrap.vr %chanOutput_203, %153 : i0
     %c0_i0_207 = hw.constant 0 : i0
     %chanOutput_208, %ready_209 = esi.wrap.vr %c0_i0_207, %144 : i0
@@ -304,8 +304,8 @@ module {
     %151 = comb.and %ready_212, %150 : i1
     %152 = comb.or %151, %emitted_1_216 {sv.namehint = "done1"} : i1
     %153 = comb.and %146, %152 {sv.namehint = "allDone"} : i1
-    %154 = arith.andi %124, %140 : i32
-    %155 = arith.ori %17, %140 : i32
+    %154 = comb.and %124, %140 : i32
+    %155 = comb.or %17, %140 : i32
     %rawOutput_217, %valid_218 = esi.unwrap.vr %chanOutput_189, %157 : i0
     %rawOutput_219, %valid_220 = esi.unwrap.vr %chanOutput_211, %157 : i0
     %rawOutput_221, %valid_222 = esi.unwrap.vr %chanOutput_74, %157 : i0
@@ -314,7 +314,7 @@ module {
     %chanOutput_226, %ready_227 = esi.wrap.vr %c0_i0_225, %156 : i0
     %156 = comb.and %valid_218, %valid_220, %valid_222, %valid_224 : i1
     %157 = comb.and %ready_227, %156 : i1
-    %158 = arith.xori %154, %155 : i32
+    %158 = comb.xor %154, %155 : i32
     %rawOutput_228, %valid_229 = esi.unwrap.vr %chanOutput_226, %177 : i0
     %c0_i0_230 = hw.constant 0 : i0
     %chanOutput_231, %ready_232 = esi.wrap.vr %c0_i0_230, %162 : i0
