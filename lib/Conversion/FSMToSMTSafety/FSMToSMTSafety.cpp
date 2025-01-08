@@ -119,7 +119,7 @@ mlir::Value getCombValue(Operation &op, Location &loc, OpBuilder &b,
     a1 = b.create<smt::EqOp>(loc, args[1], cmpVal);
   }
   if (auto addOp = llvm::dyn_cast<comb::AddOp>(op))
-    return b.create<smt::BVAddOp>(loc, args[0], args[1]);
+    return b.create<smt::BVSModOp>(loc, b.create<smt::BVAddOp>(loc, args[0], args[1]), 1 << (dyn_cast<smt::BitVectorType>(args[1].getType())).getWidth());
   if (auto andOp = llvm::dyn_cast<comb::AndOp>(op))
     return b.create<smt::AndOp>(loc, a1, a2);
   if (auto xorOp = llvm::dyn_cast<comb::XorOp>(op))
@@ -127,7 +127,7 @@ mlir::Value getCombValue(Operation &op, Location &loc, OpBuilder &b,
   if (auto orOp = llvm::dyn_cast<comb::OrOp>(op))
     return b.create<smt::OrOp>(loc, a1, a2);
   if (auto mulOp = llvm::dyn_cast<comb::MulOp>(op))
-    return b.create<smt::BVMulOp>(loc, args[0], args[0]);
+    return b.create<smt::BVSModOp>(loc, b.create<smt::BVMulOp>(loc, args[0], args[1]), 1 << (dyn_cast<smt::BitVectorType>(args[1].getType())).getWidth());
   if (auto icmp = llvm::dyn_cast<comb::ICmpOp>(op)) {
     if (icmp.getPredicate() == circt::comb::ICmpPredicate::eq) {
       return b.create<smt::EqOp>(loc, b.getType<smt::BoolType>(), args);
@@ -190,7 +190,6 @@ Transition parseTransition(fsm::TransitionOp t, int from,
     tr.hasAction = true;
     tr.action = &t.getAction();
   }
-  // todo: output
   return tr;
 }
 
