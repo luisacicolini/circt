@@ -281,7 +281,6 @@ LogicalResult MachineOpConverter::dispatch() {
   auto tmp = insertStates(states, initialState);
 
   // time is an int
-  argVarTypes.push_back(b.getType<smt::IntType>());
 
   // populate state functions and transitions vector
   for (auto stateOp : machineOp.front().getOps<fsm::StateOp>()) {
@@ -333,7 +332,7 @@ LogicalResult MachineOpConverter::dispatch() {
 
         // first we collect the initial data of variables 
         for (auto [i, a] : llvm::enumerate(forallArgs)) {
-          if (int(i) >= numOut + numArgs && int(i) < forallArgs.size() - 1) {
+          if (int(i) >= numOut + numArgs && int(i) < forallArgs.size()) {
             if (isa<smt::BoolType>(a.getType())){
               auto initVarVal = b.create<smt::BoolConstantOp>(loc, b.getBoolAttr(varInitValues[i - numOut - numArgs]));
               initVarValues.push_back(initVarVal);
@@ -347,7 +346,7 @@ LogicalResult MachineOpConverter::dispatch() {
         if (!initOutputReg->empty()){
           llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
           for (auto [i, a] : llvm::enumerate(argVars)){
-            if (int(i) >= numOut + numArgs && int(i) < forallArgs.size() - 1) {
+            if (int(i) >= numOut + numArgs && int(i) < forallArgs.size()) {
               avToSmt.push_back({a, initVarValues[i - numOut - numArgs]});
             } else {
               avToSmt.push_back({a, a});
@@ -366,9 +365,9 @@ LogicalResult MachineOpConverter::dispatch() {
         }
 
         for (auto [i, a] : llvm::enumerate(forallArgs)) {
-            if (int(i) >= numArgs && int(i) < numOut + numArgs && int(i) < forallArgs.size() - 1) { // outputs
+            if (int(i) >= numArgs && int(i) < numOut + numArgs && int(i) < forallArgs.size()) { // outputs
               initArgs.push_back(outputSmtValues[i - numArgs]); 
-            } else if (int(i) >= numOut + numArgs && int(i) < forallArgs.size() - 1) { // variables
+            } else if (int(i) >= numOut + numArgs && int(i) < forallArgs.size()) { // variables
               initArgs.push_back(initVarValues[i - numOut - numArgs]);
             } else {
               initArgs.push_back(a);
@@ -385,7 +384,7 @@ LogicalResult MachineOpConverter::dispatch() {
         auto rhs = b.create<smt::ApplyFuncOp>(loc, stateFunctions[0], initArgs);
 
         return b.create<smt::ImpliesOp>(loc, lhs, rhs);
-      });
+  });
 
   b.create<smt::AssertOp>(loc, forall);
 
