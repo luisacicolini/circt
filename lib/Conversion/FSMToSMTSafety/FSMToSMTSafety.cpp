@@ -374,16 +374,9 @@ LogicalResult MachineOpConverter::dispatch() {
             }
           }
 
-
-
-
         // retrieve output region constraint at the initial state
 
-        auto initTime = b.create<smt::IntConstantOp>(loc, b.getI32IntegerAttr(0));
-        auto lhs = b.create<smt::EqOp>(loc, forallArgs.back(), initTime);
-        auto rhs = b.create<smt::ApplyFuncOp>(loc, stateFunctions[0], initArgs);
-
-        return b.create<smt::ImpliesOp>(loc, lhs, rhs);
+        return b.create<smt::ApplyFuncOp>(loc, stateFunctions[0], initArgs);
   });
 
   b.create<smt::AssertOp>(loc, forall);
@@ -441,17 +434,7 @@ LogicalResult MachineOpConverter::dispatch() {
             updatedSmtValues.push_back(uv.second);
         }
 
-        // update time
-        auto oAttr = b.getI32IntegerAttr(1);
-        auto c1 = b.create<smt::IntConstantOp>(loc, oAttr);
-        llvm::SmallVector<mlir::Value> timeArgs = {actionArgs.back(), c1};
-        auto newTime = b.create<smt::IntAddOp>(
-            loc, b.getType<smt::IntType>(), timeArgs);
-        updatedSmtValues.push_back(newTime);
-        // push output values
-        for (auto [i, outputVal] : llvm::enumerate(outputSmtValues)) {
-          updatedSmtValues[numArgs + i] = outputVal;
-        }
+        
         return updatedSmtValues;
       }
       llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
@@ -463,12 +446,7 @@ LogicalResult MachineOpConverter::dispatch() {
       }
       // update time
       // mlir::IntegerAttr intAttr = b.getI32IntegerAttr(1);
-      auto oAttr = b.getI32IntegerAttr(1);
-        auto c1 = b.create<smt::IntConstantOp>(loc, oAttr);
-        llvm::SmallVector<mlir::Value> timeArgs = {actionArgs.back(), c1};
-        auto newTime = b.create<smt::IntAddOp>(
-            loc, b.getType<smt::IntType>(), timeArgs);
-        updatedSmtValues.push_back(newTime);
+
       // push output values
       for (auto [i, outputVal] : llvm::enumerate(outputSmtValues)) {
         updatedSmtValues[numArgs + i] = outputVal;
