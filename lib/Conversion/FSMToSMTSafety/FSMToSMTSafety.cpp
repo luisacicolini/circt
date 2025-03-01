@@ -94,6 +94,9 @@ circt::smt::IntPredicate getSmtPred(circt::comb::ICmpPredicate cmpPredicate) {
     return smt::IntPredicate::gt;
   case comb::ICmpPredicate::uge:
     return smt::IntPredicate::ge;
+  default:
+    llvm::errs() << "ERROR: '" << __LINE__ << "'";
+    assert(false && "expected legal case");
   }
 }
 
@@ -129,15 +132,22 @@ mlir::Value getCombValue(Operation &op, Location &loc, OpBuilder &b, llvm::Small
     auto predicate = getSmtPred(icmp.getPredicate());
     return b.create<smt::IntCmpOp>(loc, predicate, args[0], args[1]);
   }
+ 
+  llvm::errs() << "ERROR: '" << __LINE__ << "'";
+  assert(false && "expected legal case");
+  return mlir::Value();
+
+
 }
 
 
 
 mlir::Value getSmtValue(mlir::Value op, const llvm::SmallVector<std::pair<mlir::Value, mlir::Value>>& fsmArgVals, OpBuilder &b, Location &loc){
   // op can be an arg/var of the fsm
-
+  llvm::outs()<<"\n\nlooking for: "<<op;
   for (auto fav: fsmArgVals){
     if (op == fav.first){
+      llvm::outs()<<"\n\nfound : "<<op<<" is "<<fav.second;
       return fav.second;
     } 
   }
@@ -159,6 +169,10 @@ mlir::Value getSmtValue(mlir::Value op, const llvm::SmallVector<std::pair<mlir::
     }
     return b.create<smt::IntConstantOp>(loc, constop.getValueAttr());
   }
+
+  llvm::errs() << "ERROR: '" << __LINE__ << "'";
+  assert(false && "expected legal case");
+  return mlir::Value();
 
 }
 
@@ -346,9 +360,13 @@ LogicalResult MachineOpConverter::dispatch() {
         if (!initOutputReg->empty()){
           llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
           for (auto [i, a] : llvm::enumerate(argVars)){
-            if (int(i) >= numOut + numArgs && int(i) < forallArgs.size()) {
+            if (int(i) >= numOut + numArgs) {
               avToSmt.push_back({a, initVarValues[i - numOut - numArgs]});
+            } else if (int(i) >= numArgs) {
+              llvm::outs()<<"\n\nadding"<<a<<", "<<a;
+              avToSmt.push_back({a, a});
             } else {
+              llvm::outs()<<"\n\nadding"<<a<<", "<<a;
               avToSmt.push_back({a, a});
             }
           }
@@ -357,8 +375,18 @@ LogicalResult MachineOpConverter::dispatch() {
             // todo: check that updates requiring inputs for operations work
             if (auto outputOp = dyn_cast<fsm::OutputOp>(op)) {
               for (auto outs : outputOp->getOperands()) {
-                auto toRet = getSmtValue(outs, avToSmt, b, loc);
-                outputSmtValues.push_back(toRet);
+                auto found = false;
+                for (auto [i, fav]: llvm::enumerate(avToSmt)){
+                  if (outs == fav.first){
+                    outputSmtValues.push_back(forallArgs[i]);
+                    found = true;
+                  }
+                } 
+                if(!found) {
+                  auto toRet = getSmtValue(outs, avToSmt, b, loc);
+                  outputSmtValues.push_back(toRet);
+                  
+                }
               }
             }
           }
@@ -383,151 +411,136 @@ LogicalResult MachineOpConverter::dispatch() {
 
   // create solver region
 
-
-  for (auto [id1, t1] : llvm::enumerate(transitions)) {
-    //   // each implication op is in the same region
-    auto action = [&t1, &loc, this, &numOut, &argVars,
-                   &numArgs, &numOut](llvm::SmallVector<mlir::Value> actionArgs)
-        -> llvm::SmallVector<mlir::Value> {
-      // args includes the time, argvars does not
-      // update outputs if possible first
-      llvm::SmallVector<mlir::Value> outputSmtValues;
-
-      if (t1.hasOutput) {
-        llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
-        for (auto [id, av] : llvm::enumerate(argVars))
-          avToSmt.push_back({av, actionArgs[id]});
-        for (auto &op : t1.output->getOps()) {
-          // todo: check that updates requiring inputs for operations work
-          if (auto outputOp = dyn_cast<fsm::OutputOp>(op)) {
-            for (auto outs : outputOp->getOperands()) {
-              auto toRet =
-                  getSmtValue(outs, avToSmt, b, loc);
-              outputSmtValues.push_back(toRet);
-            }
-          }
-        }
-      }
-
-      if (t1.hasAction) {
-        llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
-        llvm::SmallVector<mlir::Value> updatedSmtValues;
-        // argvars has both inputs and time
-        for (auto [id, av] : llvm::enumerate(argVars))
-          avToSmt.push_back({av, actionArgs[id]});
-        for (auto [j, uv] : llvm::enumerate(avToSmt)) {
-          // only variables can be updated and time is updated separately
-          bool found = false;
-          // look for updates in the region
-          for (auto &op : t1.action->getOps()) {
-            // todo: check that updates requiring inputs for operations work
-            if (auto updateOp = dyn_cast<fsm::UpdateOp>(op)) {
-              if (updateOp->getOperand(0) == uv.first) {
-                auto updatedVal = getSmtValue(updateOp->getOperand(1), avToSmt,
-                                              b, loc);
-                updatedSmtValues.push_back(updatedVal);
-                found = true;
-              }
-            }
-          }
-          if (!found) // the value is not updated in the region
-            updatedSmtValues.push_back(uv.second);
-        }
-
-        
-        return updatedSmtValues;
-      }
-      llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
-      llvm::SmallVector<mlir::Value> updatedSmtValues;
-      for (auto [id, av] : llvm::enumerate(argVars))
-        avToSmt.push_back({av, actionArgs[id]});
-      for (auto [j, uv] : llvm::enumerate(avToSmt)) {
-        updatedSmtValues.push_back(uv.second);
-      }
-      // update time
-      // mlir::IntegerAttr intAttr = b.getI32IntegerAttr(1);
-
-      // push output values
-      for (auto [i, outputVal] : llvm::enumerate(outputSmtValues)) {
-        updatedSmtValues[numArgs + i] = outputVal;
-      }
-      return updatedSmtValues;
-    };
-
-    auto guard1 = [&t1, &loc, this, &argVars](
-                      llvm::SmallVector<mlir::Value> guardArgs) -> mlir::Value {
-      if (t1.hasGuard) {
-        llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
-        for (auto [av, a] : llvm::zip(argVars, guardArgs))
-          avToSmt.push_back({av, a});
-        for (auto &op : t1.guard->getOps())
-          if (auto retOp = dyn_cast<fsm::ReturnOp>(op)) {
-            auto tmp = getSmtValue(retOp->getOperand(0), avToSmt,
-                                   b, loc);
-            return tmp;
-          }
-      } else {
-        return b.create<smt::BoolConstantOp>(loc, true);
-      }
-    };
-
-
-    llvm::SmallVector<mlir::Type> forallArgVarTypes;
-    for (auto [id, avt] : llvm::enumerate(argVarTypes)){
-      if (id < numArgs){
-        forallArgVarTypes.push_back(avt);
-        forallArgVarTypes.push_back(avt);
-      } else {
-        forallArgVarTypes.push_back(avt);
-      }
-    }
-
-    auto forall = b.create<smt::ForallOp>(
-        loc, forallArgVarTypes,
-        [&guard1, &action, &t1, &stateFunctions, &numArgs,
-         &numOut](OpBuilder &b, Location loc, ValueRange forallDoubleInputs) {
-          // split new and old arguments
-
-          llvm::SmallVector<mlir::Value> startingStateArgs;
-          llvm::SmallVector<mlir::Value> arrivingStateArgs;
-          for (auto [idx, fdi] : llvm::enumerate(forallDoubleInputs)){
-            if (idx < numArgs*2){
-              if (idx % 2 == 1){
-                startingStateArgs.push_back(fdi);
-              }else{ 
-                arrivingStateArgs.push_back(fdi);
-              }
-            } else {
-              startingStateArgs.push_back(fdi);
-              arrivingStateArgs.push_back(fdi);
-            }
-          }
-
-
-          auto t1ac = b.create<smt::ApplyFuncOp>(loc, stateFunctions[t1.from],
-                                                 startingStateArgs);
-          auto actionedArgs = action(startingStateArgs);
-          for(auto [ida, aa] : llvm::enumerate(actionedArgs))
-            if (ida < numArgs)
-              actionedArgs[ida] = arrivingStateArgs[ida];
-
-          auto rhs = b.create<smt::ApplyFuncOp>(loc, stateFunctions[t1.to],
-                                                actionedArgs);
-          auto guard = guard1(startingStateArgs);
-            
-          auto lhs = b.create<smt::AndOp>(loc, t1ac, guard);
-          auto ret = b.create<smt::ImpliesOp>(loc, lhs, rhs);
-          return ret;
-          
-        });
-
-    b.create<smt::AssertOp>(loc, forall);
-  }
+  // for (auto [id1, t1] : llvm::enumerate(transitions)) {
+  //   //   // each implication op is in the same region
+  //   auto action = [&t1, &loc, this, &numOut, &argVars,
+  //                  &numArgs, &numOut](llvm::SmallVector<mlir::Value> actionArgs)
+  //       -> llvm::SmallVector<mlir::Value> {
+  //     // args includes the time, argvars does not
+  //     // update outputs if possible first
+  //     llvm::SmallVector<mlir::Value> outputSmtValues;
+  //     if (t1.hasOutput) {
+  //       llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
+  //       for (auto [id, av] : llvm::enumerate(argVars))
+  //         avToSmt.push_back({av, actionArgs[id]});
+  //       for (auto &op : t1.output->getOps()) {
+  //         // todo: check that updates requiring inputs for operations work
+  //         if (auto outputOp = dyn_cast<fsm::OutputOp>(op)) {
+  //           for (auto outs : outputOp->getOperands()) {
+  //             auto toRet =
+  //                 getSmtValue(outs, avToSmt, b, loc);
+  //             outputSmtValues.push_back(toRet);
+  //           }
+  //         }
+  //       }
+  //     }
+  //     if (t1.hasAction) {
+  //       llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
+  //       llvm::SmallVector<mlir::Value> updatedSmtValues;
+  //       // argvars has both inputs and time
+  //       for (auto [id, av] : llvm::enumerate(argVars))
+  //         avToSmt.push_back({av, actionArgs[id]});
+  //       for (auto [j, uv] : llvm::enumerate(avToSmt)) {
+  //         // only variables can be updated and time is updated separately
+  //         bool found = false;
+  //         // look for updates in the region
+  //         for (auto &op : t1.action->getOps()) {
+  //           // todo: check that updates requiring inputs for operations work
+  //           if (auto updateOp = dyn_cast<fsm::UpdateOp>(op)) {
+  //             if (updateOp->getOperand(0) == uv.first) {
+  //               auto updatedVal = getSmtValue(updateOp->getOperand(1), avToSmt,
+  //                                             b, loc);
+  //               updatedSmtValues.push_back(updatedVal);
+  //               found = true;
+  //             }
+  //           }
+  //         }
+  //         if (!found) // the value is not updated in the region
+  //           updatedSmtValues.push_back(uv.second);
+  //       }   
+  //       return updatedSmtValues;
+  //     }
+  //     llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
+  //     llvm::SmallVector<mlir::Value> updatedSmtValues;
+  //     for (auto [id, av] : llvm::enumerate(argVars))
+  //       avToSmt.push_back({av, actionArgs[id]});
+  //     for (auto [j, uv] : llvm::enumerate(avToSmt)) {
+  //       updatedSmtValues.push_back(uv.second);
+  //     }
+  //     // update time
+  //     // mlir::IntegerAttr intAttr = b.getI32IntegerAttr(1);
+  //     // push output values
+  //     for (auto [i, outputVal] : llvm::enumerate(outputSmtValues)) {
+  //       updatedSmtValues[numArgs + i] = outputVal;
+  //     }
+  //     return updatedSmtValues;
+  //   };
+  //   auto guard1 = [&t1, &loc, this, &argVars](
+  //                     llvm::SmallVector<mlir::Value> guardArgs) -> mlir::Value {
+  //     if (t1.hasGuard) {
+  //       llvm::SmallVector<std::pair<mlir::Value, mlir::Value>> avToSmt;
+  //       for (auto [av, a] : llvm::zip(argVars, guardArgs))
+  //         avToSmt.push_back({av, a});
+  //       for (auto &op : t1.guard->getOps())
+  //         if (auto retOp = dyn_cast<fsm::ReturnOp>(op)) {
+  //           auto tmp = getSmtValue(retOp->getOperand(0), avToSmt,
+  //                                  b, loc);
+  //           return tmp;
+  //         }
+  //     } else {
+  //       return b.create<smt::BoolConstantOp>(loc, true);
+  //     }
+  //   };
+  //   llvm::SmallVector<mlir::Type> forallArgVarTypes;
+  //   for (auto [id, avt] : llvm::enumerate(argVarTypes)){
+  //     if (id < numArgs){
+  //       forallArgVarTypes.push_back(avt);
+  //       forallArgVarTypes.push_back(avt);
+  //     } else {
+  //       forallArgVarTypes.push_back(avt);
+  //     }
+  //   }
+  //   auto forall = b.create<smt::ForallOp>(
+  //       loc, forallArgVarTypes,
+  //       [&guard1, &action, &t1, &stateFunctions, &numArgs,
+  //        &numOut](OpBuilder &b, Location loc, ValueRange forallDoubleInputs) {
+  //         // split new and old arguments
+  //         llvm::SmallVector<mlir::Value> startingStateArgs;
+  //         llvm::SmallVector<mlir::Value> arrivingStateArgs;
+  //         for (auto [idx, fdi] : llvm::enumerate(forallDoubleInputs)){
+  //           if (idx < numArgs*2){
+  //             if (idx % 2 == 1){
+  //               startingStateArgs.push_back(fdi);
+  //             }else{ 
+  //               arrivingStateArgs.push_back(fdi);
+  //             }
+  //           } else {
+  //             startingStateArgs.push_back(fdi);
+  //             arrivingStateArgs.push_back(fdi);
+  //           }
+  //         }
+  //         auto t1ac = b.create<smt::ApplyFuncOp>(loc, stateFunctions[t1.from],
+  //                                                startingStateArgs);
+  //         auto actionedArgs = action(startingStateArgs);
+  //         for(auto [ida, aa] : llvm::enumerate(actionedArgs))
+  //           if (ida < numArgs)
+  //             actionedArgs[ida] = arrivingStateArgs[ida];
+  //         auto rhs = b.create<smt::ApplyFuncOp>(loc, stateFunctions[t1.to],
+  //                                               actionedArgs);
+  //         auto guard = guard1(startingStateArgs);       
+  //         auto lhs = b.create<smt::AndOp>(loc, t1ac, guard);
+  //         auto ret = b.create<smt::ImpliesOp>(loc, lhs, rhs);
+  //         return ret;      
+  //       });
+  //   b.create<smt::AssertOp>(loc, forall);
+  // }
   // b.getBlock()->dump();
 
   b.create<smt::YieldOp>(loc, typeRange, valueRange);
 
-  machineOp.erase();
+  b.getBlock()->dump();
+
+  // machineOp.erase();
 
   return success();
 }
