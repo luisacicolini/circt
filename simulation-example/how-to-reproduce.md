@@ -21,3 +21,19 @@
 - `bin/circt-opt --lower-esi-ports ../simulation-example/dc-m1-c-m2-to-hw.mlir > ../simulation-example/dc-m1-c-m2-to-hw-lowered-esi.mlir`
 
 - `bin/circt-opt --lower-esi-to-hw ../simulation-example/dc-m1-c-m2-to-hw-lowered-esi.mlir > ../simulation-example/dc-m1-c-m2-to-hw-esi-to-hw.mlir`
+
+### run arcilator 
+
+After manually replacing the `index` type with `i1`, run arcilator -> did not work 
+
+## Change of plans: we lower to verilog, use a verilog simulator
+
+### lower to systemverilog and prettify
+
+- `bin/circt-opt --lower-hw-to-sv ../simulation-example/dc-m1-c-m2-to-hw-esi-to-hw.mlir > ../simulation-example/hw-to-sysv.mlir`
+
+- `bin/circt-opt --prettify-verilog ../simulation-example/hw-to-sysv.mlir > ../simulation-example/hw-to-sv-prettified.mlir`
+
+- `bin/circt-opt --lower-seq-to-sv ../simulation-example/hw-to-sv-prettified.mlir > ../simulation-example/sv-prettified-seq-to-sv.mlir`
+
+### export verilog 
