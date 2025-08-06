@@ -37,3 +37,13 @@ After manually replacing the `index` type with `i1`, run arcilator -> did not wo
 - `bin/circt-opt --lower-seq-to-sv ../simulation-example/hw-to-sv-prettified.mlir > ../simulation-example/sv-prettified-seq-to-sv.mlir`
 
 ### export verilog 
+
+- `bin/circt-opt --export-verilog ../simulation-example/sv-prettified-seq-to-sv.mlir > ../simulation-example/merge-lowered.v` yielded: 
+```
+lc985@autobot:~/circt/build$ bin/circt-opt --export-verilog ../simulation-example/sv-prettified-seq-to-sv.mlir > ../simulation-example/merge-lowered.v
+../simulation-example/sv-prettified-seq-to-sv.mlir:40:11: error: dialect "arith" not supported for direct Verilog emission
+    %21 = arith.index_cast %20 : i1 to index
+          ^
+../simulation-example/sv-prettified-seq-to-sv.mlir:40:11: note: see current operation: %50 = "arith.index_cast"(%49) : (i1) -> index
+../simulation-example/sv-prettified-seq-to-sv.mlir:40:11: note: ExportVerilog cannot emit this operation; it needs to be lowered before running ExportVerilog
+```
