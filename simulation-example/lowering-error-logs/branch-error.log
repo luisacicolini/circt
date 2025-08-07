@@ -1,9 +1,9 @@
-branch/branch-sv-prettified-sv.mlir:2:3: error: value has an unsupported verilog type 'index'
+test-branch/branch-sv-prettified-sv.mlir:2:3: error: value has an unsupported verilog type 'index'
   hw.module @test_conditional_branch(in %arg0 : i1, in %arg0_valid : i1, in %arg1 : index, in %arg1_valid : i1, in %arg2 : i0, in %arg2_valid : i1, in %clk : i1, in %rst : i1, in %out0_ready : i1, in %out1_ready : i1, in %out2_ready : i1, out arg0_ready : i1, out arg1_ready : i1, out arg2_ready : i1, out out0 : index, out out0_valid : i1, out out1 : index, out out1_valid : i1, out out2 : i0, out out2_valid : i1) {
   ^
-branch/branch-sv-prettified-sv.mlir:2:3: error: value has an unsupported verilog type 'index'
+test-branch/branch-sv-prettified-sv.mlir:2:3: error: value has an unsupported verilog type 'index'
   hw.module @test_conditional_branch(in %arg0 : i1, in %arg0_valid : i1, in %arg1 : index, in %arg1_valid : i1, in %arg2 : i0, in %arg2_valid : i1, in %clk : i1, in %rst : i1, in %out0_ready : i1, in %out1_ready : i1, in %out2_ready : i1, out arg0_ready : i1, out arg1_ready : i1, out arg2_ready : i1, out out0 : index, out out0_valid : i1, out out1 : index, out out1_valid : i1, out out2 : i0, out out2_valid : i1) {
   ^
-branch/branch-sv-prettified-sv.mlir:2:3: error: value has an unsupported verilog type 'index'
+test-branch/branch-sv-prettified-sv.mlir:2:3: error: value has an unsupported verilog type 'index'
   hw.module @test_conditional_branch(in %arg0 : i1, in %arg0_valid : i1, in %arg1 : index, in %arg1_valid : i1, in %arg2 : i0, in %arg2_valid : i1, in %clk : i1, in %rst : i1, in %out0_ready : i1, in %out1_ready : i1, in %out2_ready : i1, out arg0_ready : i1, out arg1_ready : i1, out arg2_ready : i1, out out0 : index, out out0_valid : i1, out out1 : index, out out1_valid : i1, out out2 : i0, out out2_valid : i1) {
   ^
