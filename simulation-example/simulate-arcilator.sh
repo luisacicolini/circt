@@ -31,7 +31,7 @@ run_pass() {
 
 echo "Simulating file: $INPUT_FILE"
 
-# Lower handshake to dc
+# Simulate
 run_pass "$ARCILATOR_BIN \"$INPUT_FILE\" > \"$OUTPUT_SIM\""
 
 echo "Final Simulation output is in: $OUTPUT_SIM"

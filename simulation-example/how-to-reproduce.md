@@ -47,3 +47,7 @@ lc985@autobot:~/circt/build$ bin/circt-opt --export-verilog ../simulation-exampl
 ../simulation-example/sv-prettified-seq-to-sv.mlir:40:11: note: see current operation: %50 = "arith.index_cast"(%49) : (i1) -> index
 ../simulation-example/sv-prettified-seq-to-sv.mlir:40:11: note: ExportVerilog cannot emit this operation; it needs to be lowered before running ExportVerilog
 ```
+
+### handshake runner 
+
+the command is `../build/bin/handshake-runner test-branch/branch.mlir --top-level-function=test_conditional_branch 0 1` but it does not seem to work.
