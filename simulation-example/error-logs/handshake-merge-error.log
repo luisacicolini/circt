@@ -1,5 +1,0 @@
-merge/handshake-merge-sv-prettified-sv.mlir:40:11: error: dialect "arith" not supported for direct Verilog emission
-    %21 = arith.index_cast %20 : i1 to index
-          ^
-merge/handshake-merge-sv-prettified-sv.mlir:40:11: note: see current operation: %50 = "arith.index_cast"(%49) : (i1) -> index
-merge/handshake-merge-sv-prettified-sv.mlir:40:11: note: ExportVerilog cannot emit this operation; it needs to be lowered before running ExportVerilog

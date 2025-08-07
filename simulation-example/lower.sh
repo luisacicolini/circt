@@ -18,6 +18,7 @@ OUTPUT_MAT2="$DIRNAME/${BASENAME}-to-dc-m1-c-m2.mlir"
 OUTPUT_HW="$DIRNAME/${BASENAME}-to-dc-m1-c-m2-hw.mlir"
 OUTPUT_ESI_PORTS="$DIRNAME/${BASENAME}-hw-esi.mlir"
 OUTPUT_ESI_HW="$DIRNAME/${BASENAME}-hw-esi-hw.mlir"
+OUTPUT_ESI_HW_COMB="$DIRNAME/${BASENAME}-hw-esi-hw-comb.mlir"
 OUTPUT_SV="$DIRNAME/${BASENAME}-sv.mlir"
 OUTPUT_SV_PRETTIFIED="$DIRNAME/${BASENAME}-sv-prettified.mlir"
 OUTPUT_SV_SEQ="$DIRNAME/${BASENAME}-sv-prettified-sv.mlir"
@@ -63,8 +64,11 @@ run_pass "$CIRCT_BIN --lower-dc-to-hw \"$OUTPUT_MAT2\" > \"$OUTPUT_HW\""
 run_pass "$CIRCT_BIN --lower-esi-ports \"$OUTPUT_HW\" > \"$OUTPUT_ESI_PORTS\""
 run_pass "$CIRCT_BIN --lower-esi-to-hw \"$OUTPUT_ESI_PORTS\" > \"$OUTPUT_ESI_HW\""
 
+# Map Arith to Comb
+run_pass "$CIRCT_BIN --map-arith-to-comb \"$OUTPUT_ESI_HW\" > \"$OUTPUT_ESI_HW_COMB\""
+
 # Lower to SystemVerilog and export
-run_pass "$CIRCT_BIN --lower-hw-to-sv \"$OUTPUT_ESI_HW\" > \"$OUTPUT_SV\""
+run_pass "$CIRCT_BIN --lower-hw-to-sv \"$OUTPUT_ESI_HW_COMB\" > \"$OUTPUT_SV\""
 
 # Prettify SystemVerilog
 run_pass "$CIRCT_BIN --prettify-verilog \"$OUTPUT_SV\" > \"$OUTPUT_SV_PRETTIFIED\""
@@ -75,7 +79,7 @@ run_pass "$CIRCT_BIN --lower-seq-to-sv \"$OUTPUT_SV_PRETTIFIED\" > \"$OUTPUT_SV_
 # Export Verilog
 run_pass "$CIRCT_BIN --export-verilog \"$OUTPUT_SV_SEQ\" > \"$OUTPUT_VERILOG\""
 
-echo "All passes completed successfully (or failed as per the example)."
+echo "All passes completed."
 echo "Final Verilog output is in: $OUTPUT_VERILOG"
 
 
