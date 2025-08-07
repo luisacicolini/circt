@@ -1,0 +1,39 @@
+<unknown>:0: error: state type must have a known bit width; got 'index'
+arcilator: /home/lc985/circt/llvm/mlir/include/mlir/IR/StorageUniquerSupport.h:179: static ConcreteT mlir::detail::StorageUserBase<ConcreteT, BaseT, StorageT, UniquerT, Traits>::get(mlir::MLIRContext*, Args&& ...) [with Args = {mlir::Type&}; ConcreteT = circt::arc::StateType; BaseT = mlir::Type; StorageT = circt::arc::detail::StateTypeStorage; UniquerT = mlir::detail::TypeUniquer; Traits = {}]: Assertion `succeeded( ConcreteT::verifyInvariants(getDefaultDiagnosticEmitFn(ctx), args...))' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ../build/bin/arcilator test-branch/branch-hw-esi-hw-comb.mlir
+ #0 0x00005e92e816aaf8 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /home/lc985/circt/llvm/llvm/lib/Support/Unix/Signals.inc:804:22
+ #1 0x00005e92e816af0f PrintStackTraceSignalHandler(void*) /home/lc985/circt/llvm/llvm/lib/Support/Unix/Signals.inc:880:1
+ #2 0x00005e92e81682bd llvm::sys::RunSignalHandlers() /home/lc985/circt/llvm/llvm/lib/Support/Signals.cpp:105:20
+ #3 0x00005e92e816a37a SignalHandler(int, siginfo_t*, void*) /home/lc985/circt/llvm/llvm/lib/Support/Unix/Signals.inc:418:13
+ #4 0x000072a38f445330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x000072a38f49eb2c __pthread_kill_implementation ./nptl/pthread_kill.c:44:76
+ #6 0x000072a38f49eb2c __pthread_kill_internal ./nptl/pthread_kill.c:78:10
+ #7 0x000072a38f49eb2c pthread_kill ./nptl/pthread_kill.c:89:10
+ #8 0x000072a38f44527e raise ./signal/../sysdeps/posix/raise.c:27:6
+ #9 0x000072a38f4288ff abort ./stdlib/abort.c:81:7
+#10 0x000072a38f42881b _nl_load_domain ./intl/loadmsgcat.c:1177:9
+#11 0x000072a38f43b517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#12 0x00005e92e8937130 circt::arc::StateType mlir::detail::StorageUserBase<circt::arc::StateType, mlir::Type, circt::arc::detail::StateTypeStorage, mlir::detail::TypeUniquer>::get<mlir::Type&>(mlir::MLIRContext*, mlir::Type&) /home/lc985/circt/llvm/mlir/include/mlir/IR/StorageUniquerSupport.h:179:5
+#13 0x00005e92e893373c circt::arc::StateType::get(mlir::Type) /home/lc985/circt/build/include/circt/Dialect/Arc/ArcTypes.cpp.inc:107:1
+#14 0x00005e92e8a72307 (anonymous namespace)::ModuleLowering::run() /home/lc985/circt/lib/Dialect/Arc/Transforms/LowerState.cpp:218:37
+#15 0x00005e92e8a797e9 (anonymous namespace)::LowerStatePass::runOnOperation() /home/lc985/circt/lib/Dialect/Arc/Transforms/LowerState.cpp:1188:15
+#16 0x00005e92ece4c567 mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int)::'lambda'()::operator()() const /home/lc985/circt/llvm/mlir/lib/Pass/Pass.cpp:527:22
+#17 0x00005e92ece502e4 void llvm::function_ref<void ()>::callback_fn<mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int)::'lambda'()>(long) /home/lc985/circt/llvm/llvm/include/llvm/ADT/STLFunctionalExtras.h:47:40
+#18 0x00005e92e80646b8 llvm::function_ref<void ()>::operator()() const /home/lc985/circt/llvm/llvm/include/llvm/ADT/STLFunctionalExtras.h:69:62
+#19 0x00005e92ece569fb void mlir::MLIRContext::executeAction<mlir::PassExecutionAction, mlir::Pass&>(llvm::function_ref<void ()>, llvm::ArrayRef<mlir::IRUnit>, mlir::Pass&) /home/lc985/circt/llvm/mlir/include/mlir/IR/MLIRContext.h:281:3
+#20 0x00005e92ece4c992 mlir::detail::OpToOpPassAdaptor::run(mlir::Pass*, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int) /home/lc985/circt/llvm/mlir/lib/Pass/Pass.cpp:532:23
+#21 0x00005e92ece4cc70 mlir::detail::OpToOpPassAdaptor::runPipeline(mlir::OpPassManager&, mlir::Operation*, mlir::AnalysisManager, bool, unsigned int, mlir::PassInstrumentor*, mlir::PassInstrumentation::PipelineParentInfo const*) /home/lc985/circt/llvm/mlir/lib/Pass/Pass.cpp:592:15
+#22 0x00005e92ece4ebc0 mlir::PassManager::runPasses(mlir::Operation*, mlir::AnalysisManager) /home/lc985/circt/llvm/mlir/lib/Pass/Pass.cpp:905:40
+#23 0x00005e92ece4ea17 mlir::PassManager::run(mlir::Operation*) /home/lc985/circt/llvm/mlir/lib/Pass/Pass.cpp:885:69
+#24 0x00005e92e800ae84 processBuffer(mlir::MLIRContext&, mlir::TimingScope&, llvm::SourceMgr&, std::optional<std::unique_ptr<llvm::ToolOutputFile, std::default_delete<llvm::ToolOutputFile>>>&) /home/lc985/circt/tools/arcilator/arcilator.cpp:387:13
+#25 0x00005e92e800bc11 processInputSplit(mlir::MLIRContext&, mlir::TimingScope&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, std::optional<std::unique_ptr<llvm::ToolOutputFile, std::default_delete<llvm::ToolOutputFile>>>&) /home/lc985/circt/tools/arcilator/arcilator.cpp:535:25
+#26 0x00005e92e800bdd8 processInput(mlir::MLIRContext&, mlir::TimingScope&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, std::optional<std::unique_ptr<llvm::ToolOutputFile, std::default_delete<llvm::ToolOutputFile>>>&) /home/lc985/circt/tools/arcilator/arcilator.cpp:551:29
+#27 0x00005e92e800c158 executeArcilator(mlir::MLIRContext&) /home/lc985/circt/tools/arcilator/arcilator.cpp:618:13
+#28 0x00005e92e800c3c9 main /home/lc985/circt/tools/arcilator/arcilator.cpp:679:33
+#29 0x000072a38f42a1ca __libc_start_call_main ./csu/../sysdeps/nptl/libc_start_call_main.h:74:3
+#30 0x000072a38f42a28b call_init ./csu/../csu/libc-start.c:128:20
+#31 0x000072a38f42a28b __libc_start_main ./csu/../csu/libc-start.c:347:5
+#32 0x00005e92e8009ee5 _start (../build/bin/arcilator+0x523fee5)
+./simulate-arcilator.sh: line 23: 1234855 Aborted                 (core dumped) ../build/bin/arcilator "test-branch/branch-hw-esi-hw-comb.mlir" > "test-branch/branch-hw-esi-hw-comb-simulation.ll"

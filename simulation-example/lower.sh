@@ -8,7 +8,7 @@ fi
 INPUT_FILE="$1"
 DIRNAME=$(dirname "$INPUT_FILE")
 BASENAME=$(basename "$INPUT_FILE" .mlir)
-ERROR_LOG_DIR="error-logs"
+ERROR_LOG_DIR="lowering-error-logs"
 CIRCT_BIN="../build/bin/circt-opt"
 
 OUTPUT_DC="$DIRNAME/${BASENAME}-dc.mlir"
@@ -78,8 +78,4 @@ run_pass "$CIRCT_BIN --lower-seq-to-sv \"$OUTPUT_SV_PRETTIFIED\" > \"$OUTPUT_SV_
 
 # Export Verilog
 run_pass "$CIRCT_BIN --export-verilog \"$OUTPUT_SV_SEQ\" > \"$OUTPUT_VERILOG\""
-
-echo "All passes completed."
-echo "Final Verilog output is in: $OUTPUT_VERILOG"
-
 
