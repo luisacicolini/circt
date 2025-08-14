@@ -129,6 +129,10 @@ mlir::Value getCombValue(Operation &op, Location &loc, OpBuilder &b, llvm::Small
     auto predicate = getSmtPred(icmp.getPredicate());
     return b.create<smt::IntCmpOp>(loc, predicate, args[0], args[1]);
   }
+    if (comb::MuxOp muxOp = llvm::dyn_cast<comb::MuxOp>(op)){
+    return b.create<smt::IteOp>(loc, args[0], args[1], args[2]);
+  }
+  llvm_unreachable("Unhandled operation. This should never happen");
 }
 
 
@@ -143,9 +147,10 @@ mlir::Value getSmtValue(mlir::Value op, const llvm::SmallVector<std::pair<mlir::
   }
   if (op.getDefiningOp()->getName().getDialect()->getNamespace() == "comb"){
     // op can be the result of a comb operation 
-    auto op1 = getSmtValue(op.getDefiningOp()->getOperand(0), fsmArgVals, b, loc);
-    auto op2 = getSmtValue(op.getDefiningOp()->getOperand(1), fsmArgVals, b, loc);
-    llvm::SmallVector<mlir::Value> combArgs = {op1, op2};
+    llvm::SmallVector<mlir::Value> combArgs;
+    for (mlir::Value operand : op.getDefiningOp()->getOperands()) {
+      combArgs.push_back(getSmtValue(operand, fsmArgVals, b, loc));
+    }
     return getCombValue(*op.getDefiningOp(), loc, b, combArgs);
   }
   // op can be a constant
