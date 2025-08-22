@@ -1,5 +1,5 @@
 module {
-  hw.module @add(in %a : i32, in %a_valid : i1, in %b : i32, in %b_valid : i1, in %none : i0, in %none_valid : i1, in %clk : !seq.clock, in %rst : i1, in %out0_ready : i1, out a_ready : i1, out b_ready : i1, out none_ready : i1, out out0 : i32, out out0_valid : i1) {
+  hw.module @add(in %a : i32, in %a_valid : i1, in %b : i32, in %b_valid : i1, in %clk : !seq.clock, in %rst : i1, in %out0_ready : i1, out a_ready : i1, out b_ready : i1, out out0 : i32, out out0_valid : i1) {
     %false = hw.constant false
     %c0_i0 = hw.constant 0 : i0
     %c0_i0_0 = hw.constant 0 : i0
@@ -33,10 +33,10 @@ module {
     %20 = comb.concat %19, %false : i31, i1
     %c0_i0_4 = hw.constant 0 : i0
     %c0_i0_5 = hw.constant 0 : i0
-    %21 = comb.and %3, %none_valid, %b_valid, %15, %9 : i1
+    %21 = comb.and %3, %b_valid, %15, %9 : i1
     %22 = comb.and %out0_ready, %21 : i1
     %23 = comb.add %20, %a : i32
-    hw.output %18, %22, %22, %23, %21 : i1, i1, i1, i32, i1
+    hw.output %18, %22, %23, %21 : i1, i1, i32, i1
   }
 }
 

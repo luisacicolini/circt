@@ -1,5 +1,5 @@
 module {
-  hw.module @add(in %a : !esi.channel<i32>, in %b : !esi.channel<i32>, in %none : !esi.channel<i0>, in %clk : !seq.clock {dc.clock}, in %rst : i1 {dc.reset}, out out0 : !esi.channel<i32>) {
+  hw.module @add(in %a : !esi.channel<i32>, in %b : !esi.channel<i32>, in %clk : !seq.clock {dc.clock}, in %rst : i1 {dc.reset}, out out0 : !esi.channel<i32>) {
     %false = hw.constant false
     %rawOutput, %valid = esi.unwrap.vr %a, %ready : i32
     %c0_i0 = hw.constant 0 : i0
@@ -41,18 +41,17 @@ module {
     %c0_i0_14 = hw.constant 0 : i0
     %chanOutput_15, %ready_16 = esi.wrap.vr %c0_i0_14, %valid_13 : i0
     %rawOutput_17, %valid_18 = esi.unwrap.vr %chanOutput_3, %22 : i0
-    %rawOutput_19, %valid_20 = esi.unwrap.vr %none, %22 : i0
-    %rawOutput_21, %valid_22 = esi.unwrap.vr %chanOutput_15, %22 : i0
-    %rawOutput_23, %valid_24 = esi.unwrap.vr %chanOutput_9, %22 : i0
-    %rawOutput_25, %valid_26 = esi.unwrap.vr %chanOutput_6, %22 : i0
-    %c0_i0_27 = hw.constant 0 : i0
-    %chanOutput_28, %ready_29 = esi.wrap.vr %c0_i0_27, %21 : i0
-    %21 = comb.and %valid_18, %valid_20, %valid_22, %valid_24, %valid_26 : i1
-    %22 = comb.and %ready_29, %21 : i1
+    %rawOutput_19, %valid_20 = esi.unwrap.vr %chanOutput_15, %22 : i0
+    %rawOutput_21, %valid_22 = esi.unwrap.vr %chanOutput_9, %22 : i0
+    %rawOutput_23, %valid_24 = esi.unwrap.vr %chanOutput_6, %22 : i0
+    %c0_i0_25 = hw.constant 0 : i0
+    %chanOutput_26, %ready_27 = esi.wrap.vr %c0_i0_25, %21 : i0
+    %21 = comb.and %valid_18, %valid_20, %valid_22, %valid_24 : i1
+    %22 = comb.and %ready_27, %21 : i1
     %23 = comb.add %20, %rawOutput : i32
-    %rawOutput_30, %valid_31 = esi.unwrap.vr %chanOutput_28, %ready_33 : i0
-    %chanOutput_32, %ready_33 = esi.wrap.vr %23, %valid_31 : i32
-    hw.output %chanOutput_32 : !esi.channel<i32>
+    %rawOutput_28, %valid_29 = esi.unwrap.vr %chanOutput_26, %ready_31 : i0
+    %chanOutput_30, %ready_31 = esi.wrap.vr %23, %valid_29 : i32
+    hw.output %chanOutput_30 : !esi.channel<i32>
   }
 }
 

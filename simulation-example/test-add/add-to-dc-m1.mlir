@@ -1,5 +1,5 @@
 module {
-  hw.module @add(in %a : !dc.value<i32>, in %b : !dc.value<i32>, in %none : !dc.token, in %clk : !seq.clock {dc.clock}, in %rst : i1 {dc.reset}, out out0 : !dc.value<i32>) {
+  hw.module @add(in %a : !dc.value<i32>, in %b : !dc.value<i32>, in %clk : !seq.clock {dc.clock}, in %rst : i1 {dc.reset}, out out0 : !dc.value<i32>) {
     %token, %output = dc.unpack %a : !dc.value<i32>
     %0:3 = dc.fork [3] %token 
     %1 = dc.pack %0#0, %output : i32
@@ -12,7 +12,7 @@ module {
     %6 = dc.pack %4, %5 : i32
     %token_4, %output_5 = dc.unpack %6 : !dc.value<i32>
     %token_6, %output_7 = dc.unpack %b : !dc.value<i32>
-    %7 = dc.join %none, %token_4, %token_6
+    %7 = dc.join %token_4, %token_6
     %8:2 = dc.fork [2] %7 
     %9 = dc.pack %8#1, %output_5 : i32
     %10 = dc.pack %8#0, %output_7 : i32
