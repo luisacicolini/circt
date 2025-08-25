@@ -1,0 +1,42 @@
+arcilator: /home/lc985/circt/llvm/llvm/lib/IR/Type.cpp:320: static llvm::IntegerType* llvm::IntegerType::get(llvm::LLVMContext&, unsigned int): Assertion `NumBits >= MIN_INT_BITS && "bitwidth too small"' failed.
+PLEASE submit a bug report to https://github.com/llvm/llvm-project/issues/ and include the crash backtrace.
+Stack dump:
+0.	Program arguments: ../build/bin/arcilator unpack/unpack-hw-esi-hw-comb.mlir
+ #0 0x0000591b4e4182a6 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /home/lc985/circt/llvm/llvm/lib/Support/Unix/Signals.inc:834:22
+ #1 0x0000591b4e41872f PrintStackTraceSignalHandler(void*) /home/lc985/circt/llvm/llvm/lib/Support/Unix/Signals.inc:918:1
+ #2 0x0000591b4e41589f llvm::sys::RunSignalHandlers() /home/lc985/circt/llvm/llvm/lib/Support/Signals.cpp:104:20
+ #3 0x0000591b4e417ae3 SignalHandler(int, siginfo_t*, void*) /home/lc985/circt/llvm/llvm/lib/Support/Unix/Signals.inc:426:14
+ #4 0x00007800fd845330 (/lib/x86_64-linux-gnu/libc.so.6+0x45330)
+ #5 0x00007800fd89eb2c __pthread_kill_implementation ./nptl/pthread_kill.c:44:76
+ #6 0x00007800fd89eb2c __pthread_kill_internal ./nptl/pthread_kill.c:78:10
+ #7 0x00007800fd89eb2c pthread_kill ./nptl/pthread_kill.c:89:10
+ #8 0x00007800fd84527e raise ./signal/../sysdeps/posix/raise.c:27:6
+ #9 0x00007800fd8288ff abort ./stdlib/abort.c:81:7
+#10 0x00007800fd82881b _nl_load_domain ./intl/loadmsgcat.c:1177:9
+#11 0x00007800fd83b517 (/lib/x86_64-linux-gnu/libc.so.6+0x3b517)
+#12 0x0000591b54fe01a5 llvm::IntegerType::get(llvm::LLVMContext&, unsigned int) /home/lc985/circt/llvm/llvm/lib/IR/Type.cpp:321:3
+#13 0x0000591b4f479123 mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translate(mlir::IntegerType) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/TypeToLLVM.cpp:103:3
+#14 0x0000591b4f47bb9c auto mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type)::'lambda11'(auto)::operator()<mlir::IntegerType>(auto) const /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/TypeToLLVM.cpp:75:67
+#15 0x0000591b4f47bc17 llvm::TypeSwitch<mlir::Type, llvm::Type*>& llvm::TypeSwitch<mlir::Type, llvm::Type*>::Case<mlir::IntegerType, mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type)::'lambda11'(auto)&>(mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type)::'lambda11'(auto)&) /home/lc985/circt/llvm/llvm/include/llvm/ADT/TypeSwitch.h:102:28
+#16 0x0000591b4f478e88 llvm::TypeSwitch<mlir::Type, llvm::Type*>& llvm::detail::TypeSwitchBase<llvm::TypeSwitch<mlir::Type, llvm::Type*>, mlir::Type>::Case<mlir::IntegerType, mlir::LLVM::LLVMFunctionType, mlir::LLVM::LLVMPointerType, mlir::LLVM::LLVMStructType, mlir::VectorType, mlir::LLVM::LLVMTargetExtType, mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type)::'lambda'(auto)&>(mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type)::'lambda'(auto)&) /home/lc985/circt/llvm/llvm/include/llvm/ADT/TypeSwitch.h:46:40
+#17 0x0000591b4f478e88 llvm::TypeSwitch<mlir::Type, llvm::Type*>& llvm::detail::TypeSwitchBase<llvm::TypeSwitch<mlir::Type, llvm::Type*>, mlir::Type>::Case<mlir::LLVM::LLVMArrayType, mlir::IntegerType, mlir::LLVM::LLVMFunctionType, mlir::LLVM::LLVMPointerType, mlir::LLVM::LLVMStructType, mlir::VectorType, mlir::LLVM::LLVMTargetExtType, mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type)::'lambda'(auto)>(mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type)::'lambda'(auto)&&) /home/lc985/circt/llvm/llvm/include/llvm/ADT/TypeSwitch.h:47:42
+#18 0x0000591b4f478e88 mlir::LLVM::detail::TypeToLLVMIRTranslatorImpl::translateType(mlir::Type) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/TypeToLLVM.cpp:74:43
+#19 0x0000591b4f478800 mlir::LLVM::TypeToLLVMIRTranslator::translateType(mlir::Type) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/TypeToLLVM.cpp:180:1
+#20 0x0000591b4f41118c mlir::LLVM::ModuleTranslation::convertType(mlir::Type) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/ModuleTranslation.cpp:2226:1
+#21 0x0000591b4f2aa62b convertOperationImpl(mlir::Operation&, llvm::IRBuilderBase&, mlir::LLVM::ModuleTranslation&) /home/lc985/circt/llvm/build/tools/mlir/include/mlir/Dialect/LLVMIR/LLVMConversions.inc:100:58
+#22 0x0000591b4f2c52e7 (anonymous namespace)::LLVMDialectLLVMIRTranslationInterface::convertOperation(mlir::Operation*, llvm::IRBuilderBase&, mlir::LLVM::ModuleTranslation&) const /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.cpp:728:3
+#23 0x0000591b4f4088b1 mlir::LLVM::ModuleTranslation::convertOperation(mlir::Operation&, llvm::IRBuilderBase&, bool) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/ModuleTranslation.cpp:998:13
+#24 0x0000591b4f408dea mlir::LLVM::ModuleTranslation::convertBlockImpl(mlir::Block&, bool, llvm::IRBuilderBase&, bool) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/ModuleTranslation.cpp:1048:15
+#25 0x0000591b4f40cfe3 mlir::LLVM::ModuleTranslation::convertOneFunction(mlir::LLVM::LLVMFuncOp) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/ModuleTranslation.cpp:1601:15
+#26 0x0000591b4f40ed7a mlir::LLVM::ModuleTranslation::convertFunctions() /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/ModuleTranslation.cpp:1908:15
+#27 0x0000591b4f4121de mlir::translateModuleToLLVMIR(mlir::Operation*, llvm::LLVMContext&, llvm::StringRef, bool) /home/lc985/circt/llvm/mlir/lib/Target/LLVMIR/ModuleTranslation.cpp:2402:13
+#28 0x0000591b4e2b38eb processBuffer(mlir::MLIRContext&, mlir::TimingScope&, llvm::SourceMgr&, std::optional<std::unique_ptr<llvm::ToolOutputFile, std::default_delete<llvm::ToolOutputFile>>>&) /home/lc985/circt/tools/arcilator/arcilator.cpp:507:10
+#29 0x0000591b4e2b3b33 processInputSplit(mlir::MLIRContext&, mlir::TimingScope&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, std::optional<std::unique_ptr<llvm::ToolOutputFile, std::default_delete<llvm::ToolOutputFile>>>&) /home/lc985/circt/tools/arcilator/arcilator.cpp:527:25
+#30 0x0000591b4e2b3cfc processInput(mlir::MLIRContext&, mlir::TimingScope&, std::unique_ptr<llvm::MemoryBuffer, std::default_delete<llvm::MemoryBuffer>>, std::optional<std::unique_ptr<llvm::ToolOutputFile, std::default_delete<llvm::ToolOutputFile>>>&) /home/lc985/circt/tools/arcilator/arcilator.cpp:543:29
+#31 0x0000591b4e2b407c executeArcilator(mlir::MLIRContext&) /home/lc985/circt/tools/arcilator/arcilator.cpp:610:13
+#32 0x0000591b4e2b42ed main /home/lc985/circt/tools/arcilator/arcilator.cpp:671:33
+#33 0x00007800fd82a1ca __libc_start_call_main ./csu/../sysdeps/nptl/libc_start_call_main.h:74:3
+#34 0x00007800fd82a28b call_init ./csu/../csu/libc-start.c:128:20
+#35 0x00007800fd82a28b __libc_start_main ./csu/../csu/libc-start.c:347:5
+#36 0x0000591b4e2b1e65 _start (../build/bin/arcilator+0x5840e65)
+./simulate-arcilator.sh: line 23: 1964749 Aborted                 (core dumped) ../build/bin/arcilator "unpack/unpack-hw-esi-hw-comb.mlir" > "unpack/unpack-hw-esi-hw-comb-simulation.ll"
