@@ -46,7 +46,7 @@ run_pass() {
 echo "Lowering file: $INPUT_FILE"
 
 # Lower handshake to dc
-run_pass "$CIRCT_BIN --lower-handshake-to-dc \"$INPUT_FILE\" > \"$OUTPUT_DC\""
+# run_pass "$CIRCT_BIN --lower-handshake-to-dc \"$INPUT_FILE\" > \"$OUTPUT_DC\""
 
 # Materialize forks and sinks 
 run_pass "$CIRCT_BIN --dc-materialize-forks-sinks \"$OUTPUT_DC\" > \"$OUTPUT_MAT1\""

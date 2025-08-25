@@ -1,4 +1,0 @@
-merge/merge-hw-esi-hw.mlir:29:11: error: failed to legalize operation 'arith.index_cast' that was explicitly marked illegal
-    %18 = arith.index_cast %1 : i1 to index
-          ^
-merge/merge-hw-esi-hw.mlir:29:11: note: see current operation: %26 = "arith.index_cast"(%2) : (i1) -> index
